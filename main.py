@@ -38,7 +38,7 @@ if __name__ == '__main__':
     print("-" * len(header))
     for number, (video, sound) in enumerate(correspondence_table):
         print("{:<3}{:<100}{:<100}".format(number + 1, video, sound))
-    print(f"Result directory: {args.dir_path_result}")
+    print(f"Result directory: {args.dir_results}")
 
     if not args.confirm:
         choice = None
