@@ -31,7 +31,7 @@ def measure_time(func: Callable):
     @wraps(func)
     def wrapper(*args, **kwargs):
         before = time()
-        result = func()
+        result = func(*args, **kwargs)
         run_time = timedelta(seconds=time() - before)
 
         print(f"Run time: {run_time}")
