@@ -1,4 +1,5 @@
 import argparse
+import prettytable
 
 from src.sound_adder import SoundAdder
 
@@ -37,13 +38,12 @@ if __name__ == '__main__':
                              ffmpeg_executable=args.ffmpeg_executable)
 
     correspondence_table = sound_adder.correspondence_table
-    max_file_name_video = max(len(pair.video) for pair in correspondence_table)
-    max_file_name_sound = max(len(pair.sound) for pair in correspondence_table)
-    header = "{:<3}{:<100}{:<100}".format("#", "Video", "Sound")
-    print(header)
-    print("-" * len(header))
-    for number, (video, sound) in enumerate(correspondence_table):
-        print("{:<3}{:<100}{:<100}".format(number + 1, video, sound))
+
+    table = prettytable.PrettyTable(("#V", "Video", "#S", "Sound"))
+    for _num, (video, sound) in enumerate(correspondence_table):
+        num = _num + 1
+        table.add_row((num, video, num, sound))
+    print(table)
     print(f"Result directory: {args.dir_results}")
 
     if not args.confirm:
