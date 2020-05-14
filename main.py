@@ -20,6 +20,11 @@ def parse_args() -> argparse.Namespace:
                         dest="confirm",
                         action="store_true")
 
+    parser.add_argument("-e", "--exe",
+                        help="Path to ffmpeg executable",
+                        dest="ffmpeg_executable",
+                        default="ffmpeg")
+
     return parser.parse_args()
 
 
@@ -28,7 +33,8 @@ if __name__ == '__main__':
 
     sound_adder = SoundAdder(dir_path_videos=args.dir_videos,
                              dir_path_sounds=args.dir_sounds,
-                             dir_path_result=args.dir_results)
+                             dir_path_result=args.dir_results,
+                             ffmpeg_executable=args.ffmpeg_executable)
 
     correspondence_table = sound_adder.correspondence_table
     max_file_name_video = max(len(pair.video) for pair in correspondence_table)

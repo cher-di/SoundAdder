@@ -2,6 +2,7 @@ __all__ = ["SoundAdder"]
 
 import subprocess
 import os
+import logging
 
 from collections import OrderedDict, namedtuple
 from time import time
@@ -10,42 +11,35 @@ from functools import wraps
 from typing import Callable
 
 
-def add_sound_to_video_time_decorator(func: Callable):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        _, video, sound = args
+def measure_time(task_name: str) -> Callable:
+    def decorator(func: Callable):
 
-        print(f"Adding {sound} to {video}...")
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            before = time()
+            result = func(*args, **kwargs)
+            run_time = timedelta(seconds=time() - before)
 
-        before = time()
-        result = func(*args)
+            logging.info(f"{task_name} run time: {run_time}")
 
-        print(f"Adding {sound} to {video} completed! Time: {timedelta(seconds=time() - before)}")
+            return result
 
-        return result
+        return wrapper
 
-    return wrapper
+    return decorator
 
 
-def measure_time(func: Callable):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        before = time()
-        result = func(*args, **kwargs)
-        run_time = timedelta(seconds=time() - before)
-
-        print(f"Run time: {run_time}")
-
-        return result
-
-    return wrapper
+_VIDEO_EXTENSIONS = (".mkv", ".mp4", ".avi")
+_AUDIO_EXTENSIONS = (".mka", ".aac", ".mp3", ".m4a")
 
 
 class SoundAdder:
-    def __init__(self, dir_path_videos: str, dir_path_sounds: str, dir_path_result: str):
+
+    def __init__(self, dir_path_videos: str, dir_path_sounds: str, dir_path_result: str, ffmpeg_executable: str):
         self._dir_path_videos = self.__class__._check_dir_path(dir_path_videos)
         self._dir_path_sounds = self.__class__._check_dir_path(dir_path_sounds)
         self._dir_path_result = self.__class__._check_dir_path(dir_path_result)
+        self._ffmpeg_executable = self.__class__._check_ffmpeg_executable(ffmpeg_executable)
 
         videos = self.__class__._find_videos(dir_path_videos)
         sounds = self.__class__._find_sounds(dir_path_sounds)
@@ -59,16 +53,16 @@ class SoundAdder:
         return f"{self.__class__.__name__}({self._dir_path_videos!r}, {self._dir_path_sounds!r}, " \
                f"{self._dir_path_result!r})"
 
-    @add_sound_to_video_time_decorator
+    @measure_time("Add sound to video")
     def _add_sound_to_video(self, video: str, sound: str):
         video_path = os.path.join(self._dir_path_videos, video)
         sound_path = os.path.join(self._dir_path_sounds, sound)
         result_video_path = os.path.join(self._dir_path_result, video)
-        return subprocess.call(("ffmpeg", "-i", video_path, "-i", sound_path, "-c:v", "copy", "-c:a", "copy",
-                                "-map", "0:0", "-map", "1:0", "-map", "0:1", result_video_path),
+        return subprocess.call((self._ffmpeg_executable, "-i", video_path, "-i", sound_path, "-c:v", "copy", "-c:a",
+                                "copy", "-map", "0:0", "-map", "1:0", "-map", "0:1", result_video_path),
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    @measure_time
+    @measure_time("Add sounds to all videos")
     def run(self):
         for video, sound in self._correspondence_table.items():
             self._add_sound_to_video(video, sound)
@@ -76,7 +70,7 @@ class SoundAdder:
     @staticmethod
     def _find_videos(dir_path: str) -> tuple:
         def is_video(file_name: str):
-            return file_name.endswith((".mkv", ".mp4", ".avi"))
+            return file_name.endswith(_VIDEO_EXTENSIONS)
 
         files = os.listdir(dir_path)
         return tuple(file for file in files if is_video(file))
@@ -84,7 +78,7 @@ class SoundAdder:
     @staticmethod
     def _find_sounds(dir_path: str) -> tuple:
         def is_sound(file_name: str):
-            return file_name.endswith((".mka", ".aac", ".mp3", ".m4a"))
+            return file_name.endswith(_AUDIO_EXTENSIONS)
 
         files = os.listdir(dir_path)
         return tuple(file for file in files if is_sound(file))
@@ -97,6 +91,15 @@ class SoundAdder:
             raise ValueError(f"{dir_path} is not directory")
 
         return dir_path
+
+    @staticmethod
+    def _check_ffmpeg_executable(ffmpeg_executable: str) -> str:
+        try:
+            subprocess.check_call(f"{ffmpeg_executable}", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"FFMPEG executable check failed")
+
+        return ffmpeg_executable
 
     @property
     def correspondence_table(self) -> tuple:
