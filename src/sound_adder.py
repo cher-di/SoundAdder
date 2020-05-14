@@ -95,7 +95,7 @@ class SoundAdder:
     @staticmethod
     def _check_ffmpeg_executable(ffmpeg_executable: str) -> str:
         try:
-            subprocess.check_call(f"{ffmpeg_executable}", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.check_call((f"{ffmpeg_executable}", "-h"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError as e:
             raise Exception(f"FFMPEG executable check failed")
 
