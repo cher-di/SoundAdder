@@ -1,12 +1,17 @@
+__all__ = ["check_ffmpeg_installation",
+           "check_ffprobe_installation",
+           "get_video_length",
+           "measure_time",
+           "execute_verbose",
+           "execute"]
+
 import logging
 
 from datetime import timedelta
-from typing import Callable
+from typing import Callable, Generator, Iterable
 
 
-def ffmpeg_time_to_timedelta(ffmpeg_time: str) -> timedelta:
-    hours, minutes, seconds = (int(i) for i in ffmpeg_time.split(":"))
-    return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+logging.basicConfig(level=logging.INFO)
 
 
 def measure_time(task_name: str) -> Callable:
@@ -30,38 +35,61 @@ def measure_time(task_name: str) -> Callable:
     return decorator
 
 
-def check_ffmpeg_executable(ffmpeg_executable: str) -> str:
+def check_ffmpeg_installation() -> bool:
     import subprocess
 
     try:
-        subprocess.check_call((f"{ffmpeg_executable}", "-version"),
+        subprocess.check_call(("ffmpeg", "-version"),
                               stdout=subprocess.DEVNULL,
                               stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError:
-        raise Exception(f"FFMPEG executable check failed: {ffmpeg_executable}")
-
-    return ffmpeg_executable
-
-
-def get_video_length(video_path: str, ffmpeg_executable: str) -> timedelta or None:
-    import re
-
-    from src.wrapper import FFMPEGWrapper
-
-    args = ("-i", video_path)
-    skip = False
-    time = None
-    time_pattern = "[0-9]{2}:[0-9]{2}:[0-9]{2}"
-    for output in FFMPEGWrapper(ffmpeg_executable, args).execute_verbose():
-        if skip:
-            continue
-        else:
-            match = re.search(f"DURATION +: {time_pattern}", output)
-            if match is not None:
-                match = match.group(0)
-                time = re.search(time_pattern, match).group(0)
-
-    if time is None:
-        return None
+        return False
     else:
-        return ffmpeg_time_to_timedelta(time)
+        return True
+
+
+def check_ffprobe_installation() -> bool:
+    import subprocess
+
+    try:
+        subprocess.check_call(("ffprobe", "-version"),
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        return False
+    else:
+        return True
+
+
+def get_video_length(filename: str) -> float:
+    import subprocess
+
+    result = subprocess.run(("ffprobe", "-v", "error", "-show_entries",
+                             "format=duration", "-of",
+                             "default=noprint_wrappers=1:nokey=1", filename),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+
+    return float(result.stdout)
+
+
+def execute(args: Iterable) -> int:
+    import subprocess
+
+    return subprocess.call(tuple(args),
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL)
+
+
+def execute_verbose(args: Iterable) -> Generator[str, None, None]:
+    import subprocess
+
+    process = subprocess.Popen(tuple(args),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True)
+    while True:
+        try:
+            yield next(process.stdout)
+        except StopIteration:
+            break

@@ -3,19 +3,22 @@ import argparse
 import prettytable
 import re
 import progressbar
+import logging
 
-from src.sound_adder import SoundAdder
+from src.audio_adder import AudioAdder
 from src.utils import measure_time
+
+logging.basicConfig(level=logging.INFO)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Program for adding sound to video")
+    parser = argparse.ArgumentParser(description="Program for adding audio to video")
 
     parser.add_argument("dir_videos",
                         help="Path to directory with videos")
 
-    parser.add_argument("dir_sounds",
-                        help="Path to directory with sounds")
+    parser.add_argument("dir_audios",
+                        help="Path to directory with audios")
 
     parser.add_argument("dir_results",
                         help="Path to directory to store results")
@@ -25,11 +28,6 @@ def parse_args() -> argparse.Namespace:
                         dest="confirm",
                         action="store_true")
 
-    parser.add_argument("-e", "--exe",
-                        help="Path to ffmpeg executable",
-                        dest="ffmpeg_executable",
-                        default="ffmpeg")
-
     parser.add_argument("-v", "--verbose",
                         help="Activate verbose",
                         dest="verbose",
@@ -38,42 +36,60 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-@measure_time("Add sounds to all videos")
-def main(sound_adder: SoundAdder, args: argparse.Namespace):
-    from src.utils import get_video_length, ffmpeg_time_to_timedelta
+@measure_time("Add audios to all videos")
+def main(audio_adder: AudioAdder, verbose=False):
+    import os
 
-    if not args.verbose:
-        sound_adder.run()
+    from datetime import timedelta
+
+    from src.utils import get_video_length
+
+    if not verbose:
+        for runner in audio_adder.get_runners():
+            runner.run_silent()
     else:
-        for num, ffmpeg_wrapper in enumerate(sound_adder.get_ffmpeg_wrappers()):
-            table = prettytable.PrettyTable(("#", "result"))
-            table.add_row((num + 1,
-                           ffmpeg_wrapper.result_video_path))
-            print(table)
+        for num, runner in enumerate(audio_adder.get_runners()):
+            video = os.path.basename(runner.video_path)
+            audio = os.path.basename(runner.audio_path)
+            print(f"{num + 1}: {video} + {audio}")
 
-            video_length = get_video_length(ffmpeg_wrapper.video_path, args.ffmpeg_executable)
-            with progressbar.ProgressBar(max_value=video_length.total_seconds()) as bar:
-                for output in ffmpeg_wrapper.execute_verbose():
+            video_length = int(get_video_length(runner.video_path))
+            with progressbar.ProgressBar(max_value=100) as bar:
+                for output in runner.run_verbose():
                     match = re.search("time=[0-9]{2}:[0-9]{2}:[0-9]{2}", output)
                     if match is not None:
                         match = match.group(0)
-                        time = ffmpeg_time_to_timedelta(match[5:])
-                        bar.update(time.total_seconds())
+                        hours, minutes, seconds = (int(i) for i in match[5:].split(":"))
+                        time = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                        bar.update(int(time.total_seconds() / video_length * 100))
+
+
+def check_requirements():
+    from src.utils import check_ffmpeg_installation, check_ffprobe_installation
+
+    if not check_ffmpeg_installation():
+        raise Exception("FFMPEG is not installed")
+
+    if not check_ffprobe_installation():
+        raise Exception("FFPROBE is not installed")
 
 
 if __name__ == '__main__':
+    try:
+        check_requirements()
+    except Exception as e:
+        print(e)
+        exit(1)
+
     args = parse_args()
 
-    sound_adder = SoundAdder(dir_path_videos=args.dir_videos,
-                             dir_path_sounds=args.dir_sounds,
-                             dir_path_result=args.dir_results,
-                             ffmpeg_executable=args.ffmpeg_executable)
+    audio_adder = AudioAdder(args.dir_videos, args.dir_audios, args.dir_results)
 
-    correspondence_table = sound_adder.correspondence_table
+    correspondence_table = audio_adder.correspondence_table
 
-    table = prettytable.PrettyTable(("#", "Video", "Sound"))
-    for num, (video, sound) in enumerate(correspondence_table):
-        table.add_row((num + 1, video, sound))
+    table = prettytable.PrettyTable(("#", "Video", "Audio"))
+    for num, (video, audio) in enumerate(correspondence_table):
+        table.add_row((num + 1, video, audio))
     print(table)
     print(f"Result directory: {args.dir_results}")
 
@@ -84,6 +100,6 @@ if __name__ == '__main__':
         if choice == "n":
             print("Cancellation of program")
         else:
-            main(sound_adder, args)
+            main(audio_adder, args.verbose)
     else:
-        main(sound_adder, args)
+        main(audio_adder, args.verbose)
