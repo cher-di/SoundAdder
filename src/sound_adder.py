@@ -1,36 +1,40 @@
 __all__ = ["SoundAdder"]
 
-import subprocess
 import os
-import logging
 
 from collections import OrderedDict, namedtuple
-from time import time
-from datetime import timedelta
-from functools import wraps
-from typing import Callable
+from typing import Generator
 
-
-def measure_time(task_name: str) -> Callable:
-    def decorator(func: Callable):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            before = time()
-            result = func(*args, **kwargs)
-            run_time = timedelta(seconds=time() - before)
-
-            logging.info(f"{task_name} run time: {run_time}")
-
-            return result
-
-        return wrapper
-
-    return decorator
+from src.utils import check_ffmpeg_executable
+from src.wrapper import FFMPEGWrapper
 
 
 _VIDEO_EXTENSIONS = (".mkv", ".mp4", ".avi")
 _AUDIO_EXTENSIONS = (".mka", ".aac", ".mp3", ".m4a")
+
+
+class SoundAdderWrapper(FFMPEGWrapper):
+    def __init__(self, ffmpeg_executable: str, video_path: str, sound_path: str, result_video_path: str):
+        args = ("-i", video_path, "-i", sound_path, "-c:v", "copy", "-c:a", "copy", "-map", "0:0", "-map", "1:0",
+                "-map", "0:1", result_video_path)
+
+        super().__init__(ffmpeg_executable, args)
+
+        self._video_path = video_path
+        self._sound_path = sound_path
+        self._result_video_path = result_video_path
+
+    @property
+    def video_path(self):
+        return self._video_path
+
+    @property
+    def sound_path(self):
+        return self._sound_path
+
+    @property
+    def result_video_path(self):
+        return self._result_video_path
 
 
 class SoundAdder:
@@ -39,7 +43,8 @@ class SoundAdder:
         self._dir_path_videos = self.__class__._check_dir_path(dir_path_videos)
         self._dir_path_sounds = self.__class__._check_dir_path(dir_path_sounds)
         self._dir_path_result = self.__class__._check_dir_path(dir_path_result)
-        self._ffmpeg_executable = self.__class__._check_ffmpeg_executable(ffmpeg_executable)
+
+        self._ffmpeg_executable = check_ffmpeg_executable(ffmpeg_executable)
 
         videos = self.__class__._find_videos(dir_path_videos)
         sounds = self.__class__._find_sounds(dir_path_sounds)
@@ -51,21 +56,22 @@ class SoundAdder:
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._dir_path_videos!r}, {self._dir_path_sounds!r}, " \
-               f"{self._dir_path_result!r})"
+               f"{self._dir_path_result!r}, f{self._ffmpeg_executable!r})"
 
-    @measure_time("Add sound to video")
-    def _add_sound_to_video(self, video: str, sound: str):
+    def _add_sound_to_video(self, video: str, sound: str) -> SoundAdderWrapper:
         video_path = os.path.join(self._dir_path_videos, video)
         sound_path = os.path.join(self._dir_path_sounds, sound)
         result_video_path = os.path.join(self._dir_path_result, video)
-        return subprocess.call((self._ffmpeg_executable, "-i", video_path, "-i", sound_path, "-c:v", "copy", "-c:a",
-                                "copy", "-map", "0:0", "-map", "1:0", "-map", "0:1", result_video_path),
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    @measure_time("Add sounds to all videos")
+        return SoundAdderWrapper(self._ffmpeg_executable, video_path, sound_path, result_video_path)
+
+    def get_ffmpeg_wrappers(self) -> Generator[SoundAdderWrapper, None, None]:
+        for video, sound in self._correspondence_table.items():
+            yield self._add_sound_to_video(video, sound)
+
     def run(self):
         for video, sound in self._correspondence_table.items():
-            self._add_sound_to_video(video, sound)
+            self._add_sound_to_video(video, sound).execute()
 
     @staticmethod
     def _find_videos(dir_path: str) -> tuple:
@@ -91,15 +97,6 @@ class SoundAdder:
             raise ValueError(f"{dir_path} is not directory")
 
         return dir_path
-
-    @staticmethod
-    def _check_ffmpeg_executable(ffmpeg_executable: str) -> str:
-        try:
-            subprocess.check_call((f"{ffmpeg_executable}", "-h"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError as e:
-            raise Exception(f"FFMPEG executable check failed")
-
-        return ffmpeg_executable
 
     @property
     def correspondence_table(self) -> tuple:
