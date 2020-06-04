@@ -1,32 +1,24 @@
-__all__ = ["check_ffmpeg_installation",
-           "check_ffprobe_installation",
-           "get_video_length",
-           "measure_time",
-           "execute_verbose",
-           "execute"]
+import logging as _logging
+import datetime as _datetime
+import subprocess as _subprocess
+import time as _time
 
-import logging
+from typing import Callable as _Callable, Generator as _Generator, Iterable as _Iterable
 
-from datetime import timedelta
-from typing import Callable, Generator, Iterable
+_logging.basicConfig(level=_logging.INFO)
 
 
-logging.basicConfig(level=logging.INFO)
-
-
-def measure_time(task_name: str) -> Callable:
+def measure_time(task_name: str) -> _Callable:
     from functools import wraps
 
-    def decorator(func: Callable):
+    def decorator(func: _Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            from time import time
-
-            before = time()
+            before = _time.time()
             result = func(*args, **kwargs)
-            run_time = timedelta(seconds=time() - before)
+            run_time = _datetime.timedelta(seconds=_time.time() - before)
 
-            logging.info(f"{task_name} run time: {run_time}")
+            _logging.info(f"{task_name} run time: {run_time}")
 
             return result
 
@@ -36,60 +28,59 @@ def measure_time(task_name: str) -> Callable:
 
 
 def check_ffmpeg_installation() -> bool:
-    import subprocess
-
     try:
-        subprocess.check_call(("ffmpeg", "-version"),
-                              stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
+        _subprocess.check_call(("ffmpeg", "-version"),
+                               stdout=_subprocess.DEVNULL,
+                               stderr=_subprocess.DEVNULL)
+    except _subprocess.CalledProcessError:
         return False
     else:
         return True
 
 
 def check_ffprobe_installation() -> bool:
-    import subprocess
-
     try:
-        subprocess.check_call(("ffprobe", "-version"),
-                              stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
+        _subprocess.check_call(("ffprobe", "-version"),
+                               stdout=_subprocess.DEVNULL,
+                               stderr=_subprocess.DEVNULL)
+    except _subprocess.CalledProcessError:
         return False
     else:
         return True
 
 
 def get_video_length(filename: str) -> float:
-    import subprocess
-
-    result = subprocess.run(("ffprobe", "-v", "error", "-show_entries",
-                             "format=duration", "-of",
-                             "default=noprint_wrappers=1:nokey=1", filename),
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
+    result = _subprocess.run(("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
+                              "default=noprint_wrappers=1:nokey=1", filename),
+                             stdout=_subprocess.PIPE,
+                             stderr=_subprocess.STDOUT)
 
     return float(result.stdout)
 
 
-def execute(args: Iterable) -> int:
-    import subprocess
-
-    return subprocess.call(tuple(args),
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL)
+def execute(args: _Iterable[str]) -> int:
+    return _subprocess.call(tuple(args),
+                            stdout=_subprocess.DEVNULL,
+                            stderr=_subprocess.DEVNULL)
 
 
-def execute_verbose(args: Iterable) -> Generator[str, None, None]:
-    import subprocess
-
-    process = subprocess.Popen(tuple(args),
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               universal_newlines=True)
+def execute_verbose(args: _Iterable[str]) -> _Generator[str, None, None]:
+    process = _subprocess.Popen(tuple(args),
+                                stdout=_subprocess.PIPE,
+                                stderr=_subprocess.STDOUT,
+                                universal_newlines=True)
     while True:
         try:
             yield next(process.stdout)
         except StopIteration:
             break
+
+
+def is_video(file_name: str) -> bool:
+    video_extensions = (".mkv", ".mp4", ".avi")
+    return file_name.endswith(video_extensions)
+
+
+def is_audio(file_name: str) -> bool:
+    audio_extensions = (".mka", ".aac", ".mp3", ".m4a")
+    return file_name.endswith(audio_extensions)
