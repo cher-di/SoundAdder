@@ -11,11 +11,12 @@ class Runner:
     video_path: str
     audio_path: str
     result_path: str
+    _args: _Tuple[str, ...] = _dataclasses.field(init=False)
 
-    @property
-    def _args(self) -> _Tuple[str, ...]:
-        return "ffmpeg", "-i", self.video_path, "-i", self.audio_path,\
-               "-c:v", "copy", "-c:a", "copy", "-map", "0:0", "-map", "1:0", "-map", "0:1", self.result_path
+    def __post_init__(self):
+        object.__setattr__(self, '_args', ("ffmpeg", "-i", self.video_path, "-i", self.audio_path, "-c:v", "copy",
+                                           "-c:a", "copy", "-map", "0:0", "-map", "1:0", "-map", "0:1",
+                                           self.result_path))
 
     def run_verbose(self) -> _Generator[str, None, None]:
         for output in _utils.execute_verbose(self._args):
@@ -28,9 +29,9 @@ class Runner:
 class AudioAdder:
 
     def __init__(self, dir_path_videos: str, dir_path_audios: str, dir_path_result: str):
-        self._dir_path_videos = self.__class__._check_dir_path(dir_path_videos)
-        self._dir_path_audios = self.__class__._check_dir_path(dir_path_audios)
-        self._dir_path_result = self.__class__._check_dir_path(dir_path_result)
+        self._dir_path_videos = dir_path_videos
+        self._dir_path_audios = dir_path_audios
+        self._dir_path_result = dir_path_result
 
         videos = self.__class__._find_videos(dir_path_videos)
         audios = self.__class__._find_audios(dir_path_audios)
@@ -44,7 +45,7 @@ class AudioAdder:
         return f"{self.__class__.__name__}({self._dir_path_videos!r}, {self._dir_path_audios!r}, " \
                f"{self._dir_path_result!r})"
     
-    def _make_cmd_to_add_audio_to_video(self, video: str, audio: str):
+    def _make_cmd_to_add_audio_to_video(self, video: str, audio: str) -> _Tuple[str, ...]:
         video_path = _os.path.join(self._dir_path_videos, video)
         audio_path = _os.path.join(self._dir_path_audios, audio)
         result_video_path = _os.path.join(self._dir_path_result, video)
@@ -71,15 +72,6 @@ class AudioAdder:
     def _find_audios(dir_path: str) -> tuple:
         files = _os.listdir(dir_path)
         return tuple(file for file in files if _utils.is_audio(file))
-
-    @staticmethod
-    def _check_dir_path(dir_path: str) -> str:
-        if not _os.path.exists(dir_path):
-            raise FileNotFoundError(dir_path)
-        if not _os.path.isdir(dir_path):
-            raise ValueError(f"{dir_path} is not directory")
-
-        return dir_path
 
     @property
     def correspondence_table(self) -> tuple:

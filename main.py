@@ -14,14 +14,17 @@ logging.basicConfig(level=logging.INFO)
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Program for adding audio to video")
 
-    parser.add_argument("dir_videos",
-                        help="Path to directory with videos")
+    parser.add_argument("videos",
+                        help="Path to directory with videos",
+                        type=src.utils.parse_dir_path)
 
-    parser.add_argument("dir_audios",
-                        help="Path to directory with audios")
+    parser.add_argument("audios",
+                        help="Path to directory with audios",
+                        type=src.utils.parse_dir_path)
 
-    parser.add_argument("dir_results",
-                        help="Path to directory to store results")
+    parser.add_argument("results",
+                        help="Path to directory to store results",
+                        type=src.utils.parse_dir_path)
 
     parser.add_argument("-y",
                         help="Confirm to run script",

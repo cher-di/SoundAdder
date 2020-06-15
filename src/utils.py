@@ -2,6 +2,7 @@ import logging as _logging
 import datetime as _datetime
 import subprocess as _subprocess
 import time as _time
+import os as _os
 
 from typing import Callable as _Callable, Generator as _Generator, Iterable as _Iterable
 
@@ -84,3 +85,22 @@ def is_video(file_name: str) -> bool:
 def is_audio(file_name: str) -> bool:
     audio_extensions = (".mka", ".aac", ".mp3", ".m4a")
     return file_name.endswith(audio_extensions)
+
+
+def parse_path(path: str) -> str:
+    if not _os.path.exists(path):
+        raise ValueError('Nonexistent path')
+    return _os.path.abspath(path)
+
+
+def parse_dir_path(path: str) -> str:
+    if not _os.path.isdir(path):
+        raise ValueError(f'Nonexistent directory: {path}')
+    return _os.path.abspath(path)
+
+
+def parse_file_path(path: str) -> str:
+    if not _os.path.isfile(path):
+        raise ValueError(f'Nonexistent file: {path}')
+    return _os.path.abspath(path)
+
