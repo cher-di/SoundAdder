@@ -3,10 +3,19 @@ import datetime as _datetime
 import subprocess as _subprocess
 import time as _time
 import os as _os
+import re as _re
+import enum as _enum
 
 from typing import Callable as _Callable, Generator as _Generator, Iterable as _Iterable
 
 _logging.basicConfig(level=_logging.INFO)
+
+
+@_enum.unique
+class FileType(_enum.Enum):
+    AUDIO = _enum.auto()
+    VIDEO = _enum.auto()
+    UNKNOWN = _enum.auto()
 
 
 def measure_time(task_name: str) -> _Callable:
@@ -77,14 +86,31 @@ def execute_verbose(args: _Iterable[str]) -> _Generator[str, None, None]:
             break
 
 
+def get_file_type(file_name: str) -> FileType:
+    pattern_video = _re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Video')
+    pattern_audio = _re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Audio')
+
+    process = _subprocess.Popen(('ffprobe', file_name),
+                                stdout=_subprocess.PIPE,
+                                stderr=_subprocess.STDOUT,
+                                universal_newlines=True)
+    while True:
+        try:
+            string = next(process.stdout)
+            if _re.search(pattern_video, string) is not None:
+                return FileType.VIDEO
+            if _re.search(pattern_audio, string) is not None:
+                return FileType.AUDIO
+        except StopIteration:
+            return FileType.UNKNOWN
+
+
 def is_video(file_name: str) -> bool:
-    video_extensions = (".mkv", ".mp4", ".avi")
-    return file_name.endswith(video_extensions)
+    return get_file_type(file_name) == FileType.VIDEO
 
 
 def is_audio(file_name: str) -> bool:
-    audio_extensions = (".mka", ".aac", ".mp3", ".m4a")
-    return file_name.endswith(audio_extensions)
+    return get_file_type(file_name) == FileType.AUDIO
 
 
 def parse_path(path: str) -> str:
@@ -103,4 +129,3 @@ def parse_file_path(path: str) -> str:
     if not _os.path.isfile(path):
         raise ValueError(f'Nonexistent file: {path}')
     return _os.path.abspath(path)
-

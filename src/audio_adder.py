@@ -44,33 +44,21 @@ class AudioAdder:
     def __repr__(self):
         return f"{self.__class__.__name__}({self._dir_path_videos!r}, {self._dir_path_audios!r}, " \
                f"{self._dir_path_result!r})"
-    
-    def _make_cmd_to_add_audio_to_video(self, video: str, audio: str) -> _Tuple[str, ...]:
-        video_path = _os.path.join(self._dir_path_videos, video)
-        audio_path = _os.path.join(self._dir_path_audios, audio)
-        result_video_path = _os.path.join(self._dir_path_result, video)
-
-        return f"ffmpeg -i '{video_path}' -i '{audio_path}' -c:v copy -c:a copy -map 0:0 -map 1:0 -map 0:1 {result_video_path}"
-
-    def _make_runner(self, video: str, audio: str):
-        video_path = _os.path.join(self._dir_path_videos, video)
-        audio_path = _os.path.join(self._dir_path_audios, audio)
-        result_path = _os.path.join(self._dir_path_result, video)
-
-        return Runner(video_path, audio_path, result_path)
 
     def get_runners(self) -> _Generator[Runner, None, None]:
         for video, audio in self._correspondence_table.items():
-            yield self._make_runner(video, audio)
+            video_name = _os.path.basename(video)
+            result_path = _os.path.join(self._dir_path_result, video_name)
+            yield Runner(video, audio, result_path)
 
     @staticmethod
-    def _find_videos(dir_path: str) -> tuple:
-        files = _os.listdir(dir_path)
+    def _find_videos(dir_path: str) -> _Tuple[str, ...]:
+        files = (_os.path.join(dir_path, file) for file in _os.listdir(dir_path))
         return tuple(file for file in files if _utils.is_video(file))
 
     @staticmethod
-    def _find_audios(dir_path: str) -> tuple:
-        files = _os.listdir(dir_path)
+    def _find_audios(dir_path: str) -> _Tuple[str, ...]:
+        files = (_os.path.join(dir_path, file) for file in _os.listdir(dir_path))
         return tuple(file for file in files if _utils.is_audio(file))
 
     @property
