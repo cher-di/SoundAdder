@@ -32,7 +32,7 @@ def check_ffmpeg_installation() -> bool:
         _subprocess.check_call(("ffmpeg", "-version"),
                                stdout=_subprocess.DEVNULL,
                                stderr=_subprocess.DEVNULL)
-    except _subprocess.CalledProcessError:
+    except (_subprocess.CalledProcessError, FileNotFoundError):
         return False
     else:
         return True
@@ -43,7 +43,7 @@ def check_ffprobe_installation() -> bool:
         _subprocess.check_call(("ffprobe", "-version"),
                                stdout=_subprocess.DEVNULL,
                                stderr=_subprocess.DEVNULL)
-    except _subprocess.CalledProcessError:
+    except (_subprocess.CalledProcessError, FileNotFoundError):
         return False
     else:
         return True
