@@ -15,13 +15,16 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Program for adding audio to video")
 
     parser.add_argument("dir_videos",
-                        help="Path to directory with videos")
+                        help="Path to directory with videos",
+                        type=src.utils.parse_dir_path)
 
     parser.add_argument("dir_audios",
-                        help="Path to directory with audios")
+                        help="Path to directory with audios",
+                        type=src.utils.parse_dir_path)
 
     parser.add_argument("dir_results",
-                        help="Path to directory to store results")
+                        help="Path to directory to store results",
+                        type=src.utils.parse_dir_path)
 
     parser.add_argument("-y",
                         help="Confirm to run script",
@@ -81,7 +84,9 @@ if __name__ == '__main__':
 
     table = prettytable.PrettyTable(("#", "Video", "Audio"))
     for num, (video, audio) in enumerate(correspondence_table):
-        table.add_row((num + 1, video, audio))
+        video_name = os.path.basename(video)
+        audio_name = os.path.basename(audio)
+        table.add_row((num + 1, video_name, audio_name))
     print(table)
     print(f"Result directory: {args.dir_results}")
 
