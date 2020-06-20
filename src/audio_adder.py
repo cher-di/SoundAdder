@@ -16,8 +16,7 @@ class Runner:
 
     def __post_init__(self):
         object.__setattr__(self, '_args', ("ffmpeg", "-i", self.video_path, "-i", self.audio_path, "-c:v", "copy",
-                                           "-c:a", "copy", "-map", "0:0", "-map", "1:0", "-map", "0:1",
-                                           self.result_path))
+                                           "-c:a", "copy", "-map", "0:0", "-map", "1:0", self.result_path))
 
     def run_verbose(self) -> _Generator[str, None, None]:
         for output in _utils.execute_verbose(self._args):

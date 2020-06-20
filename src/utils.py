@@ -83,8 +83,10 @@ def execute_verbose(args: _Iterable[str]) -> _Generator[str, None, None]:
         try:
             yield next(process.stdout)
         except StopIteration:
-            if not process.returncode:
+            if process.returncode:
                 raise _subprocess.CalledProcessError(process.returncode, tuple(args))
+            else:
+                break
 
 
 def get_file_type(file_name: str) -> FileType:
@@ -129,4 +131,15 @@ def parse_dir_path(path: str) -> str:
 def parse_file_path(path: str) -> str:
     if not _os.path.isfile(path):
         raise ValueError(f'Nonexistent file: {path}')
+    return _os.path.abspath(path)
+
+
+def parse_writable_filepath(path: str) -> str:
+    if _os.path.isfile(path):
+        if not _os.access(path, _os.W_OK):
+            raise ValueError(f"Don't have permission to rewrite file: {path}")
+    else:
+        dir_path = parse_dir_path(_os.path.dirname(path))
+        if not _os.access(dir_path, _os.W_OK):
+            raise ValueError(f"Don't have permissions to write file in this directory: {dir_path}")
     return _os.path.abspath(path)

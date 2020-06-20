@@ -7,6 +7,8 @@ import os
 import datetime
 import sys
 import subprocess
+from typing import Iterable, Generator
+import json
 
 import src.audio_adder
 import src.utils
@@ -19,15 +21,18 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("dir_videos",
                         help="Path to directory with videos",
-                        type=src.utils.parse_dir_path)
+                        type=src.utils.parse_dir_path,
+                        metavar="videos")
 
     parser.add_argument("dir_audios",
                         help="Path to directory with audios",
-                        type=src.utils.parse_dir_path)
+                        type=src.utils.parse_dir_path,
+                        metavar="audios")
 
     parser.add_argument("dir_results",
                         help="Path to directory to store results",
-                        type=src.utils.parse_dir_path)
+                        type=src.utils.parse_dir_path,
+                        metavar="results")
 
     parser.add_argument("-y",
                         help="Confirm to run script",
@@ -39,32 +44,76 @@ def parse_args() -> argparse.Namespace:
                         dest="verbose",
                         action="store_true")
 
+    parser.add_argument("-s", "--skip",
+                        help="Skip failed videos and sounds adding. "
+                             "If not specified, exit with first failed adding with return code 1.",
+                        dest="skip",
+                        action="store_true")
+
+    parser.add_argument("-j", "--json",
+                        help="Save adding status to specified file in json format",
+                        dest="status_file",
+                        metavar="FILEPATH",
+                        type=src.utils.parse_writable_filepath)
+
     return parser.parse_args()
 
 
-@src.utils.measure_time("Add audios to all videos")
-def main(audio_adder: src.audio_adder.AudioAdder, verbose=False):
-    if not verbose:
-        for runner in audio_adder.get_runners():
-            runner.run_silent()
+def run_verbose(runner: src.audio_adder.Runner, num: int) -> int:
+    print(f"{num + 1}: {os.path.basename(runner.video_path)} + {os.path.basename(runner.audio_path)}")
+    video_length = int(src.utils.get_video_length(runner.video_path))
+    try:
+        with progressbar.ProgressBar(max_value=100) as bar:
+            for output in runner.run_verbose():
+                match = re.search("time=[0-9]{2}:[0-9]{2}:[0-9]{2}", output)
+                if match is not None:
+                    match = match.group(0)
+                    hours, minutes, seconds = (int(i) for i in match[5:].split(":"))
+                    time = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                    bar.update(int(time.total_seconds() / video_length * 100))
+    except subprocess.CalledProcessError as e:
+        return e.returncode
     else:
-        for num, runner in enumerate(audio_adder.get_runners()):
-            video = os.path.basename(runner.video_path)
-            audio = os.path.basename(runner.audio_path)
-            print(f"{num + 1}: {video} + {audio}")
+        return 0
 
-            video_length = int(src.utils.get_video_length(runner.video_path))
-            try:
-                with progressbar.ProgressBar(max_value=100) as bar:
-                    for output in runner.run_verbose():
-                        match = re.search("time=[0-9]{2}:[0-9]{2}:[0-9]{2}", output)
-                        if match is not None:
-                            match = match.group(0)
-                            hours, minutes, seconds = (int(i) for i in match[5:].split(":"))
-                            time = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
-                            bar.update(int(time.total_seconds() / video_length * 100))
-            except subprocess.CalledProcessError as e:
-                print(f'An error occurred with {video} and {audio}, returncode: {e.returncode}', file=sys.stderr)
+
+class StatusFile:
+    def __init__(self, file_path: str):
+        self._file_path = file_path
+        self._status_list = []
+
+    def add_status(self, video_path: str, audio_path: str, result_path: str, returncode: int):
+        self._status_list.append({
+            "video_path": video_path,
+            "audio_path": audio_path,
+            "result_path": result_path,
+            "returncode": returncode,
+        })
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._file_path is not None:
+            with open(self._file_path, 'w', encoding='utf-8') as file:
+                json.dump(self._status_list, file, indent=4)
+
+
+@src.utils.measure_time("Add audios to all videos")
+def main(runners: Iterable[src.audio_adder.Runner], verbose=False, skip=False, status_file_path: str = None) -> int:
+    main_returncode = 0
+    with StatusFile(status_file_path) as status_file:
+        for num, runner in enumerate(runners):
+            returncode = run_verbose(runner, num) if verbose else runner.run_silent()
+            status_file.add_status(runner.video_path, runner.audio_path, runner.result_path, returncode)
+            if returncode:
+                print(f'An error occurred when adding {runner.audio_path} to {runner.video_path} and writing to {runner.result_path}, returncode: {returncode}',
+                      file=sys.stderr)
+                if not skip:
+                    return 1
+                else:
+                    main_returncode = 1
+    return main_returncode
 
 
 def check_requirements():
@@ -80,7 +129,8 @@ if __name__ == '__main__':
         check_requirements()
 
         args = parse_args()
-    
+
+        print("Scanning directories...")
         audio_adder = src.audio_adder.AudioAdder(args.dir_videos, args.dir_audios, args.dir_results)
 
         correspondence_table = audio_adder.correspondence_table
@@ -100,9 +150,9 @@ if __name__ == '__main__':
             if choice == "n":
                 print("Cancellation of program")
             else:
-                main(audio_adder, args.verbose)
+                exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
         else:
-            main(audio_adder, args.verbose)
+            exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
 
     except Exception as e:
         print(e, file=sys.stderr)
