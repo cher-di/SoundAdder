@@ -83,7 +83,8 @@ def execute_verbose(args: _Iterable[str]) -> _Generator[str, None, None]:
         try:
             yield next(process.stdout)
         except StopIteration:
-            break
+            if not process.returncode:
+                raise _subprocess.CalledProcessError(process.returncode, tuple(args))
 
 
 def get_file_type(file_name: str) -> FileType:
