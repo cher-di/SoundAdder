@@ -8,7 +8,6 @@ import datetime
 import sys
 import subprocess
 from typing import Iterable
-import json
 
 import src.audio_adder
 import src.utils
@@ -61,7 +60,7 @@ def parse_args() -> argparse.Namespace:
 
 def run_verbose(runner: src.audio_adder.Runner, num: int) -> int:
     print(f"{num + 1}: {os.path.basename(runner.video_path)} + {os.path.basename(runner.audio_path)}")
-    video_length = int(src.utils.get_video_length(runner.video_path))
+    video_length = src.utils.get_video_length(runner.video_path)
     try:
         with progressbar.ProgressBar(max_value=100) as bar:
             for output in runner.run_verbose():
@@ -70,7 +69,7 @@ def run_verbose(runner: src.audio_adder.Runner, num: int) -> int:
                     match = match.group(0)
                     hours, minutes, seconds = (int(i) for i in match[5:].split(":"))
                     time = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
-                    bar.update(int(time.total_seconds() / video_length * 100))
+                    bar.update(int(time / video_length * 100))
     except subprocess.CalledProcessError as e:
         return e.returncode
     else:

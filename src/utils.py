@@ -82,13 +82,13 @@ def check_ffprobe_installation() -> bool:
         return True
 
 
-def get_video_length(filename: str) -> float:
+def get_video_length(filename: str) -> _datetime.timedelta:
     result = _subprocess.run(("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
                               "default=noprint_wrappers=1:nokey=1", filename),
                              stdout=_subprocess.PIPE,
                              stderr=_subprocess.STDOUT)
-
-    return float(result.stdout)
+    video_length = float(result.stdout)
+    return _datetime.timedelta(seconds=int(video_length))
 
 
 def execute(args: _Iterable[str]) -> int:
