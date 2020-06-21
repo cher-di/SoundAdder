@@ -7,7 +7,7 @@ import os
 import datetime
 import sys
 import subprocess
-from typing import Iterable, Generator
+from typing import Iterable
 import json
 
 import src.audio_adder
@@ -77,32 +77,10 @@ def run_verbose(runner: src.audio_adder.Runner, num: int) -> int:
         return 0
 
 
-class StatusFile:
-    def __init__(self, file_path: str):
-        self._file_path = file_path
-        self._status_list = []
-
-    def add_status(self, video_path: str, audio_path: str, result_path: str, returncode: int):
-        self._status_list.append({
-            "video_path": video_path,
-            "audio_path": audio_path,
-            "result_path": result_path,
-            "returncode": returncode,
-        })
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._file_path is not None:
-            with open(self._file_path, 'w', encoding='utf-8') as file:
-                json.dump(self._status_list, file, indent=4)
-
-
 @src.utils.measure_time("Add audios to all videos")
 def main(runners: Iterable[src.audio_adder.Runner], verbose=False, skip=False, status_file_path: str = None) -> int:
     main_returncode = 0
-    with StatusFile(status_file_path) as status_file:
+    with src.utils.StatusFile(status_file_path) as status_file:
         for num, runner in enumerate(runners):
             returncode = run_verbose(runner, num) if verbose else runner.run_silent()
             status_file.add_status(runner.video_path, runner.audio_path, runner.result_path, returncode)
@@ -117,11 +95,14 @@ def main(runners: Iterable[src.audio_adder.Runner], verbose=False, skip=False, s
 
 
 def check_requirements():
+    not_installed = []
     if not src.utils.check_ffmpeg_installation():
-        raise Exception("FFMPEG is not installed")
-
+        not_installed.append("ffmpeg")
     if not src.utils.check_ffprobe_installation():
-        raise Exception("FFPROBE is not installed")
+        not_installed.append("ffprobe")
+
+    if not_installed:
+        raise Exception(f"Those packages are not installed: {', '.join(not_installed)}")
 
 
 if __name__ == '__main__':
