@@ -28,9 +28,10 @@ def install(binary_name: str, binary_path: str, download_method: _Callable):
         download_method(filepath)
 
         logger.info(f'Extracting {binary_name}')
+        archive_path = f'{binary_name}.exe' if _platform.system().lower() == 'windows' else binary_name
         with _zipfile.ZipFile(filepath) as zipfile:
-            zipfile.extract(binary_name, path=temp_dir)
-        _os.rename(_os.path.join(temp_dir, binary_name), binary_path)
+            zipfile.extract(archive_path, path=temp_dir)
+        _os.rename(_os.path.join(temp_dir, archive_path), binary_path)
 
         if _platform.system().lower() == 'linux':
             logger.info(f'Make {binary_name} executable')
