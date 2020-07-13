@@ -2,7 +2,6 @@ import argparse
 import prettytable
 import re
 import progressbar
-import logging
 import os
 import datetime
 import sys
@@ -11,8 +10,6 @@ from typing import Iterable
 
 import src.audio_adder
 import src.utils
-
-logging.basicConfig(level=logging.INFO)
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,7 +73,6 @@ def run_verbose(runner: src.audio_adder.Runner, num: int) -> int:
         return 0
 
 
-@src.utils.measure_time("Add audios to all videos")
 def main(runners: Iterable[src.audio_adder.Runner], verbose=False, skip=False, status_file_path: str = None) -> int:
     main_returncode = 0
     with src.utils.StatusFile(status_file_path) as status_file:
