@@ -20,7 +20,7 @@ class Runner:
         self._return_code = None
 
     def __repr__(self):
-        return f'Runner({self._args})'
+        return f'{self.__class__.__name__}({self._args})'
 
     def run_verbose(self) -> _Generator[str, None, None]:
         self._return_code = 0
