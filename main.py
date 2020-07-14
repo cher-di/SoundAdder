@@ -10,6 +10,7 @@ from typing import Iterable
 
 import src.audio_adder
 import src.utils
+import src.status_file
 
 
 def parse_args() -> argparse.Namespace:
@@ -75,7 +76,7 @@ def run_verbose(runner: src.audio_adder.Runner, num: int) -> int:
 
 def main(runners: Iterable[src.audio_adder.Runner], verbose=False, skip=False, status_file_path: str = None) -> int:
     main_returncode = 0
-    with src.utils.StatusFile(status_file_path) as status_file:
+    with src.status_file.StatusFile(status_file_path) as status_file:
         for num, runner in enumerate(runners):
             returncode = run_verbose(runner, num) if verbose else runner.run_silent()
             status_file.add_status(runner.video_path, runner.audio_path, runner.result_path, returncode)
