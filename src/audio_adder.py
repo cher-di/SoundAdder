@@ -1,31 +1,33 @@
 import os as _os
 import collections as _collections
-import dataclasses as _dataclasses
 
 import src.utils as _utils
+import src.runner as _runner
 
 from typing import Generator as _Generator, Tuple as _Tuple
 
 from src import ffmpeg
 
 
-@_dataclasses.dataclass(frozen=True)
-class Runner:
-    video_path: str
-    audio_path: str
-    result_path: str
-    _args: _Tuple[str, ...] = _dataclasses.field(init=False)
+class SoundAdderRunner(_runner.Runner):
+    def __init__(self, video_path: str, audio_path: str, result_path: str):
+        super().__init__((ffmpeg, "-i", video_path, "-i", audio_path, "-c:v", "copy",
+                          "-c:a", "copy", "-map", "0:0", "-map", "1:0", result_path))
+        self._video_path = video_path
+        self._audio_path = audio_path
+        self._result_path = result_path
 
-    def __post_init__(self):
-        object.__setattr__(self, '_args', (ffmpeg, "-i", self.video_path, "-i", self.audio_path, "-c:v", "copy",
-                                           "-c:a", "copy", "-map", "0:0", "-map", "1:0", self.result_path))
+    @property
+    def video_path(self) -> str:
+        return self._video_path
 
-    def run_verbose(self) -> _Generator[str, None, None]:
-        for output in _utils.execute_verbose(self._args):
-            yield output
+    @property
+    def audio_path(self) -> str:
+        return self._audio_path
 
-    def run_silent(self) -> int:
-        return _utils.execute(self._args)
+    @property
+    def result_path(self) -> str:
+        return self._result_path
 
 
 class AudioAdder:
@@ -47,11 +49,11 @@ class AudioAdder:
         return f"{self.__class__.__name__}({self._dir_path_videos!r}, {self._dir_path_audios!r}, " \
                f"{self._dir_path_result!r})"
 
-    def get_runners(self) -> _Generator[Runner, None, None]:
+    def get_runners(self) -> _Generator[SoundAdderRunner, None, None]:
         for video, audio in self._correspondence_table.items():
             video_name = _os.path.basename(video)
             result_path = _os.path.join(self._dir_path_result, video_name)
-            yield Runner(video, audio, result_path)
+            yield SoundAdderRunner(video, audio, result_path)
 
     @staticmethod
     def _find_videos(dir_path: str) -> _Tuple[str, ...]:
