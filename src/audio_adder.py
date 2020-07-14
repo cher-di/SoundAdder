@@ -46,7 +46,7 @@ class AudioAdder:
         _videos, _audios = sorted(videos), sorted(audios)
         correspondence_table = tuple(tuple(pair) for pair in zip(_videos, _audios))
 
-        self.__class__._check_media_duration(correspondence_table, max_duration_delta)
+        self.__class__._check_media_duration(correspondence_table, self._max_duration_delta)
 
         self._correspondence_table = correspondence_table
 
@@ -71,7 +71,8 @@ class AudioAdder:
             raise ValueError(f"Not equal number of videos and audios: {videos_num} videos and {audios_num} audios")
 
     @staticmethod
-    def _check_media_duration(correspondence_table: _Tuple[_Tuple[str, str], ...], max_duration_delta):
+    def _check_media_duration(correspondence_table: _Tuple[_Tuple[str, str], ...],
+                              max_duration_delta: _datetime.timedelta):
         different_length = []
         for video, audio in correspondence_table:
             video_duration = _utils.get_media_duration(video)
@@ -82,8 +83,8 @@ class AudioAdder:
                     audio: str(audio_duration),
                 })
         if different_length:
-            raise ValueError(f'There are some videos and audios with different duration: '
-                             f'{_json.dumps(different_length, indent=4)}')
+            raise ValueError(f'There are some videos and audios with difference between durations '
+                             f'more than {max_duration_delta}: 'f'{_json.dumps(different_length, indent=4)}')
 
     @property
     def correspondence_table(self) -> _Tuple[_Tuple[str, str], ...]:
