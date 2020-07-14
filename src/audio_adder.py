@@ -6,6 +6,8 @@ import src.utils as _utils
 
 from typing import Generator as _Generator, Tuple as _Tuple
 
+from src import ffmpeg
+
 
 @_dataclasses.dataclass(frozen=True)
 class Runner:
@@ -15,7 +17,7 @@ class Runner:
     _args: _Tuple[str, ...] = _dataclasses.field(init=False)
 
     def __post_init__(self):
-        object.__setattr__(self, '_args', ("ffmpeg", "-i", self.video_path, "-i", self.audio_path, "-c:v", "copy",
+        object.__setattr__(self, '_args', (ffmpeg, "-i", self.video_path, "-i", self.audio_path, "-c:v", "copy",
                                            "-c:a", "copy", "-map", "0:0", "-map", "1:0", self.result_path))
 
     def run_verbose(self) -> _Generator[str, None, None]:
