@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
                         metavar="results")
 
     parser.add_argument("-y",
-                        help="Confirm to run script",
+                        help="Run script without confirmation prompt",
                         dest="confirm",
                         action="store_true")
 
