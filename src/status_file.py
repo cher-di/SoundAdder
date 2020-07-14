@@ -7,7 +7,7 @@ class StatusFile:
         self._status_list = []
 
     def __repr__(self):
-        return f'StatusFile({self._file_path})'
+        return f'{self.__class__.__name__}({self._file_path!r})'
 
     def __enter__(self):
         return self
