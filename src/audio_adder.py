@@ -36,8 +36,8 @@ class AudioAdder:
         self._dir_path_audios = dir_path_audios
         self._dir_path_result = dir_path_result
 
-        videos = self.__class__._find_videos(dir_path_videos)
-        audios = self.__class__._find_audios(dir_path_audios)
+        videos = self.__class__._find_files(dir_path_videos, _utils.is_video)
+        audios = self.__class__._find_files(dir_path_audios, _utils.is_audio)
 
         self.__class__._check_media_num(len(videos), len(audios))
 
@@ -59,15 +59,7 @@ class AudioAdder:
             yield AudioAdderRunner(video, audio, result_path)
 
     @staticmethod
-    def _find_videos(dir_path: str) -> _Tuple[str, ...]:
-        return AudioAdder._find_files(dir_path, _utils.is_video)
-
-    @staticmethod
-    def _find_audios(dir_path: str) -> _Tuple[str, ...]:
-        return AudioAdder._find_files(dir_path, _utils.is_audio)
-
-    @staticmethod
-    def _find_files(dir_path: str, is_correct_file_type: _Callable):
+    def _find_files(dir_path: str, is_correct_file_type: _Callable) -> _Tuple[str, ...]:
         files = (_os.path.join(dir_path, file) for file in _os.listdir(dir_path))
         return tuple(file for file in files if is_correct_file_type(file))
 
@@ -92,7 +84,7 @@ class AudioAdder:
                              f'{_json.dumps(different_length, indent=4)}')
 
     @property
-    def correspondence_table(self) -> tuple:
+    def correspondence_table(self) -> _Tuple[_Tuple[str, str], ...]:
         return self._correspondence_table
 
 
