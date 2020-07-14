@@ -1,13 +1,12 @@
-import logging as _logging
 import datetime as _datetime
 import subprocess as _subprocess
-import time as _time
 import os as _os
 import re as _re
 import enum as _enum
 import json as _json
+import platform as _platform
 
-from typing import Callable as _Callable, Generator as _Generator, Iterable as _Iterable
+from typing import Generator as _Generator, Iterable as _Iterable
 
 from src import ffmpeg, ffprobe
 
@@ -147,3 +146,17 @@ def parse_writable_filepath(path: str) -> str:
         if not _os.access(dir_path, _os.W_OK):
             raise ValueError(f"Don't have permissions to write file in this directory: {dir_path}")
     return _os.path.abspath(path)
+
+
+def get_arch():
+    arch = _platform.machine()
+    if '64' in arch:
+        return 'x64'
+    elif '86' in arch:
+        return 'x86'
+    else:
+        return arch
+
+
+def get_system():
+    return _platform.system().lower()
