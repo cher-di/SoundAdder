@@ -56,7 +56,7 @@ def parse_args() -> argparse.Namespace:
 
 def run_verbose(runner: src.audio_adder.SoundAdderRunner, num: int) -> int:
     print(f"{num + 1}: {os.path.basename(runner.video_path)} + {os.path.basename(runner.audio_path)}")
-    video_length = src.utils.get_video_length(runner.video_path)
+    video_length = src.utils.get_media_length(runner.video_path)
     with progressbar.ProgressBar(max_value=100) as bar:
         for output in runner.run_verbose():
             match = re.search("time=[0-9]{2}:[0-9]{2}:[0-9]{2}", output)
