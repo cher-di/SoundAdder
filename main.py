@@ -52,6 +52,12 @@ def parse_args() -> argparse.Namespace:
                         metavar="FILEPATH",
                         type=src.utils.parse_writable_filepath)
 
+    parser.add_argument("-d", "--delta",
+                        help="Maximum delta, between durations of video and audio in seconds",
+                        dest="delta",
+                        type=src.utils.parse_duration_delta,
+                        default=0)
+
     return parser.parse_args()
 
 

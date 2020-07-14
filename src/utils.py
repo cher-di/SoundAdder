@@ -126,6 +126,13 @@ def parse_writable_filepath(path: str) -> str:
     return _os.path.abspath(path)
 
 
+def parse_duration_delta(duration: str) -> int:
+    duration = int(duration)
+    if duration < 0:
+        raise ValueError(f'Duration delta can not be negative')
+    return duration
+
+
 def get_arch():
     arch = _platform.machine()
     if '64' in arch:
