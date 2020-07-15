@@ -36,6 +36,6 @@ class Runner:
 
     @property
     def return_code(self) -> int:
-        if self._return_code in None:
+        if self._return_code is None:
             raise NeverRanError
         return self._return_code
