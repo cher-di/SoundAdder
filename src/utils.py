@@ -40,7 +40,7 @@ def check_ffprobe_installation() -> bool:
         return True
 
 
-def get_media_length(filename: str) -> _datetime.timedelta:
+def get_media_duration(filename: str) -> _datetime.timedelta:
     result = _subprocess.run((ffprobe, "-v", "error", "-show_entries", "format=duration", "-of",
                               "default=noprint_wrappers=1:nokey=1", filename),
                              stdout=_subprocess.PIPE,
@@ -124,6 +124,13 @@ def parse_writable_filepath(path: str) -> str:
         if not _os.access(dir_path, _os.W_OK):
             raise ValueError(f"Don't have permissions to write file in this directory: {dir_path}")
     return _os.path.abspath(path)
+
+
+def parse_duration_delta(duration: str) -> int:
+    duration = int(duration)
+    if duration < 0:
+        raise ValueError(f'Duration delta can not be negative')
+    return duration
 
 
 def get_arch():

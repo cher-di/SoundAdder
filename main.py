@@ -52,12 +52,18 @@ def parse_args() -> argparse.Namespace:
                         metavar="FILEPATH",
                         type=src.utils.parse_writable_filepath)
 
+    parser.add_argument("-d", "--delta",
+                        help="Maximum delta, between durations of video and audio in seconds",
+                        dest="delta",
+                        type=src.utils.parse_duration_delta,
+                        default=0)
+
     return parser.parse_args()
 
 
-def run_verbose(runner: src.audio_adder.SoundAdderRunner, num: int) -> int:
+def run_verbose(runner: src.audio_adder.AudioAdderRunner, num: int) -> int:
     print(f"{num + 1}: {os.path.basename(runner.video_path)} + {os.path.basename(runner.audio_path)}")
-    video_length = src.utils.get_media_length(runner.video_path)
+    video_length = src.utils.get_media_duration(runner.video_path)
     with progressbar.ProgressBar(max_value=100) as bar:
         for output in runner.run_verbose():
             match = re.search("time=[0-9]{2}:[0-9]{2}:[0-9]{2}", output)
@@ -69,7 +75,7 @@ def run_verbose(runner: src.audio_adder.SoundAdderRunner, num: int) -> int:
     return runner.return_code
 
 
-def main(runners: Iterable[src.audio_adder.SoundAdderRunner], verbose=False, skip=False,
+def main(runners: Iterable[src.audio_adder.AudioAdderRunner], verbose=False, skip=False,
          status_file_path: str = None) -> int:
     main_returncode = 0
     with src.status_file.StatusFile(status_file_path) as status_file:
