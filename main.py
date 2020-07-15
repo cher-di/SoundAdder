@@ -98,35 +98,30 @@ def check_requirements():
 
 
 if __name__ == '__main__':
-    try:
-        check_requirements()
+    check_requirements()
 
-        args = parse_args()
+    args = parse_args()
 
-        print("Scanning directories...")
-        audio_adder = src.audio_adder.AudioAdder(args.dir_videos, args.dir_audios, args.dir_results)
+    print("Scanning directories...")
+    audio_adder = src.audio_adder.AudioAdder(args.dir_videos, args.dir_audios, args.dir_results, args.delta)
 
-        correspondence_table = audio_adder.correspondence_table
+    correspondence_table = audio_adder.correspondence_table
 
-        table = prettytable.PrettyTable(("#", "Video", "Audio"))
-        for num, (video, audio) in enumerate(correspondence_table):
-            video_name = os.path.basename(video)
-            audio_name = os.path.basename(audio)
-            table.add_row((num + 1, video_name, audio_name))
-        print(table)
-        print(f"Result directory: {args.dir_results}")
+    table = prettytable.PrettyTable(("#", "Video", "Audio"))
+    for num, (video, audio) in enumerate(correspondence_table):
+        video_name = os.path.basename(video)
+        audio_name = os.path.basename(audio)
+        table.add_row((num + 1, video_name, audio_name))
+    print(table)
+    print(f"Result directory: {args.dir_results}")
 
-        if not args.confirm:
-            choice = None
-            while choice not in ("y", "n"):
-                choice = input("Continue? (y)es/(n)o: ")
-            if choice == "n":
-                print("Cancellation of program")
-            else:
-                exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
+    if not args.confirm:
+        choice = None
+        while choice not in ("y", "n"):
+            choice = input("Continue? (y)es/(n)o: ")
+        if choice == "n":
+            print("Cancellation of program")
         else:
             exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
-
-    except Exception as e:
-        print(e, file=sys.stderr)
-        exit(1)
+    else:
+        exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
