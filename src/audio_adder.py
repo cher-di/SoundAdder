@@ -77,7 +77,7 @@ class AudioAdder:
         for video, audio in correspondence_table:
             video_duration = _utils.get_media_duration(video)
             audio_duration = _utils.get_media_duration(audio)
-            if abs(video_duration - audio_duration) <= max_duration_delta:
+            if abs(video_duration - audio_duration) > max_duration_delta:
                 different_length.append({
                     video: str(video_duration),
                     audio: str(audio_duration),
