@@ -5,30 +5,42 @@ import stat as _stat
 import platform as _platform
 import functools as _functools
 import logging as _logging
+import progressbar as _progressbar
 
-import src.ffbinaries.download as _download_ff
+import src.ffbinaries.download as _download
 import src.utils as _utils
 
 from typing import Callable as _Callable
 
 from src import tools_path, ffmpeg, ffprobe
 
+_progressbar.streams.wrap_stderr()
+
 _logging.basicConfig(level=_logging.INFO,
-                     format='[%(levelname)s][%(name)s][%(asctime)s] %(message)s',
+                     format='[%(asctime)s][%(levelname)s] %(message)s',
                      datefmt='%d.%m.%Y %H:%M:%S')
 logger = _logging.getLogger(__name__)
 
 
-def install(binary_name: str, binary_path: str, download_method: _Callable):
+def install(binary_name: str, binary_path: str):
     _os.makedirs(_os.path.dirname(binary_path), exist_ok=True)
     with _tempfile.TemporaryDirectory(dir=tools_path) as temp_dir:
         filepath = _os.path.join(temp_dir, 'temp.zip')
 
-        logger.info(f'Downloading {binary_name}')
-        download_method(filepath)
+        binary = _download.FFBinary(binary_name, _utils.get_system(), _utils.get_arch())
+        logger.info(f'Downloading {binary.file_name}')
+        widgets = [
+            f'{binary.file_name}: ', _progressbar.Percentage(),
+            ' ', _progressbar.Bar(),
+            ' ', _progressbar.ETA(),
+            ' ', _progressbar.FileTransferSpeed(),
+        ]
+        with _progressbar.ProgressBar(widgets=widgets, max_value=binary.size) as bar:
+            for downloaded_size in binary.download(filepath):
+                bar.update(downloaded_size)
 
-        logger.info(f'Extracting {binary_name}')
         archive_path = f'{binary_name}.exe' if _platform.system().lower() == 'windows' else binary_name
+        logger.info(f'Extracting {archive_path} from {binary.file_name}')
         with _zipfile.ZipFile(filepath) as zipfile:
             zipfile.extract(archive_path, path=temp_dir)
         _os.rename(_os.path.join(temp_dir, archive_path), binary_path)
@@ -91,12 +103,12 @@ def install_wrapper(binary_name: str, binary_path: str, _verifier: _Callable):
 
 @install_wrapper('ffmpeg', ffmpeg, _utils.check_ffmpeg_installation)
 def install_ffmpeg():
-    install('ffmpeg', ffmpeg, _download_ff.download_ffmpeg_for_local_machine)
+    install('ffmpeg', ffmpeg)
 
 
 @install_wrapper('ffprobe', ffprobe, _utils.check_ffprobe_installation)
 def install_ffprobe():
-    install('ffprobe', ffprobe, _download_ff.download_ffprobe_for_local_machine)
+    install('ffprobe', ffprobe)
 
 
 def main():

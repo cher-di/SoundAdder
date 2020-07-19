@@ -12,6 +12,9 @@ import src.utils
 import src.status_file
 
 
+progressbar.streams.wrap_stderr()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Program for adding audio to video")
 
