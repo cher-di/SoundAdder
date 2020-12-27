@@ -1,9 +1,13 @@
-import requests as _requests
-import os as _os
+import requests
+import os
+import typing
 
-import src.ffbinaries.ffbinaries as _ffbinaries
+import src.ffbinaries.ffbinaries as ffbinaries
 
-from typing import Generator as _Generator
+__all__ = [
+    'Binary',
+    'FFBinary',
+]
 
 
 class Binary:
@@ -11,18 +15,18 @@ class Binary:
         self._url = url
         self._size = self.__class__._get_size(url)
 
-    def download(self, filepath: str) -> _Generator[int, None, None]:
-        with _requests.get(self._url, stream=True) as response:
+    def download(self, filepath: str) -> typing.Generator[int, None, None]:
+        with requests.get(self._url, stream=True) as response:
             response.raise_for_status()
             with open(filepath, 'wb') as file:
                 for chunk in response.iter_content(chunk_size=8192):
                     file.write(chunk)
                     file.flush()
-                    yield _os.stat(filepath).st_size
+                    yield os.stat(filepath).st_size
 
     @staticmethod
     def _get_size(url: str) -> int:
-        with _requests.get(url, stream=True) as response:
+        with requests.get(url, stream=True) as response:
             return int(response.headers['Content-Length'])
 
     @property
@@ -44,7 +48,7 @@ class FFBinary(Binary):
 
     @staticmethod
     def _get_ffbinary_download_link(binary_name: str, system: str, arch: str, version: str):
-        binaries = _ffbinaries.get_latest_binaries_links() if version is None else _ffbinaries.get_binaries_links(
+        binaries = ffbinaries.get_latest_binaries_links() if version is None else ffbinaries.get_binaries_links(
             version)
         system_code = f'{system.lower()}-{arch[1:]}'
         return binaries[system_code][binary_name]

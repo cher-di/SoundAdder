@@ -1,13 +1,30 @@
-import os as _os
-import platform as _platform
+import os
+import platform
 
-SCRIPT_ROOT = _os.path.realpath(_os.path.dirname(_os.path.dirname(__file__)))
-TOOLS_PATH = _os.path.join(SCRIPT_ROOT, 'tools')
 
-_ffmpeg_binary = 'ffmpeg.exe' if _platform.system().lower() == 'windows' else 'ffmpeg'
-_ffprobe_binary = 'ffprobe.exe' if _platform.system().lower() == 'windows' else 'ffprobe'
+__all__ = [
+    'SCRIPT_ROOT',
+    'TOOLS_ROOT',
+    'FFMPEG',
+    'FFPROBE',
+    'APP_NAME',
 
-FFMPEG = _os.path.join(TOOLS_PATH, _ffmpeg_binary)
-FFPROBE = _os.path.join(TOOLS_PATH, _ffprobe_binary)
+    'audio_adder',
+    'install',
+    'runner',
+    'status_file',
+    'utils',
+    'ffbinaries',
+]
+
+
+SCRIPT_ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
+TOOLS_ROOT = os.path.join(SCRIPT_ROOT, 'tools')
+
+ffmpeg_binary = 'ffmpeg.exe' if platform.system().lower() == 'windows' else 'ffmpeg'
+ffprobe_binary = 'ffprobe.exe' if platform.system().lower() == 'windows' else 'ffprobe'
+
+FFMPEG = os.path.join(TOOLS_ROOT, ffmpeg_binary)
+FFPROBE = os.path.join(TOOLS_ROOT, ffprobe_binary)
 
 APP_NAME = 'SoundAdder'

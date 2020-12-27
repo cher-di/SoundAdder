@@ -1,29 +1,43 @@
-import datetime as _datetime
-import subprocess as _subprocess
-import os as _os
-import re as _re
-import enum as _enum
-import json as _json
-import platform as _platform
-
-from typing import Generator as _Generator, Iterable as _Iterable
+import datetime
+import subprocess
+import os
+import re
+import enum
+import platform
+import typing
 
 from src import FFMPEG, FFPROBE
 
+__all__ = [
+    'check_ffmpeg_installation',
+    'check_ffprobe_installation',
+    'get_media_duration',
+    'execute',
+    'execute_verbose',
+    'get_file_type',
+    'is_video',
+    'is_audio',
+    'parse_path',
+    'parse_dir_path',
+    'parse_file_path',
+    'parse_writable_filepath',
+    'parse_duration_delta',
+]
 
-@_enum.unique
-class FileType(_enum.Enum):
-    AUDIO = _enum.auto()
-    VIDEO = _enum.auto()
-    UNKNOWN = _enum.auto()
+
+@enum.unique
+class FileType(enum.Enum):
+    AUDIO = enum.auto()
+    VIDEO = enum.auto()
+    UNKNOWN = enum.auto()
 
 
 def check_ffmpeg_installation() -> bool:
     try:
-        _subprocess.check_call((FFMPEG, "-version"),
-                               stdout=_subprocess.DEVNULL,
-                               stderr=_subprocess.DEVNULL)
-    except (_subprocess.CalledProcessError, FileNotFoundError):
+        subprocess.check_call((FFMPEG, "-version"),
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
         return False
     else:
         return True
@@ -31,59 +45,59 @@ def check_ffmpeg_installation() -> bool:
 
 def check_ffprobe_installation() -> bool:
     try:
-        _subprocess.check_call((FFPROBE, "-version"),
-                               stdout=_subprocess.DEVNULL,
-                               stderr=_subprocess.DEVNULL)
-    except (_subprocess.CalledProcessError, FileNotFoundError):
+        subprocess.check_call((FFPROBE, "-version"),
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
         return False
     else:
         return True
 
 
-def get_media_duration(filename: str) -> _datetime.timedelta:
-    result = _subprocess.run((FFPROBE, "-v", "error", "-show_entries", "format=duration", "-of",
-                              "default=noprint_wrappers=1:nokey=1", filename),
-                             stdout=_subprocess.PIPE,
-                             stderr=_subprocess.STDOUT)
+def get_media_duration(filename: str) -> datetime.timedelta:
+    result = subprocess.run((FFPROBE, "-v", "error", "-show_entries", "format=duration", "-of",
+                             "default=noprint_wrappers=1:nokey=1", filename),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
     video_length = float(result.stdout)
-    return _datetime.timedelta(seconds=int(video_length))
+    return datetime.timedelta(seconds=int(video_length))
 
 
-def execute(args: _Iterable[str]) -> int:
-    return _subprocess.call(tuple(args),
-                            stdout=_subprocess.DEVNULL,
-                            stderr=_subprocess.DEVNULL)
+def execute(args: typing.Iterable[str]) -> int:
+    return subprocess.call(tuple(args),
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL)
 
 
-def execute_verbose(args: _Iterable[str]) -> _Generator[str, None, None]:
-    process = _subprocess.Popen(tuple(args),
-                                stdout=_subprocess.PIPE,
-                                stderr=_subprocess.STDOUT,
-                                universal_newlines=True)
+def execute_verbose(args: typing.Iterable[str]) -> typing.Generator[str, None, None]:
+    process = subprocess.Popen(tuple(args),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True)
     while True:
         try:
             yield next(process.stdout)
         except StopIteration:
             if process.returncode:
-                raise _subprocess.CalledProcessError(process.returncode, tuple(args))
+                raise subprocess.CalledProcessError(process.returncode, tuple(args))
             else:
                 break
 
 
 def get_file_type(file_name: str) -> FileType:
-    pattern_video = _re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Video')
-    pattern_audio = _re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Audio')
+    pattern_video = re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Video')
+    pattern_audio = re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Audio')
 
-    process = _subprocess.Popen((FFPROBE, file_name),
-                                stdout=_subprocess.PIPE,
-                                stderr=_subprocess.STDOUT,
-                                universal_newlines=True)
+    process = subprocess.Popen((FFPROBE, file_name),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True)
     while True:
         try:
             string = next(process.stdout)
-            if _re.search(pattern_video, string) is not None:
+            if re.search(pattern_video, string) is not None:
                 return FileType.VIDEO
-            if _re.search(pattern_audio, string) is not None:
+            if re.search(pattern_audio, string) is not None:
                 return FileType.AUDIO
         except StopIteration:
             return FileType.UNKNOWN
@@ -98,32 +112,32 @@ def is_audio(file_name: str) -> bool:
 
 
 def parse_path(path: str) -> str:
-    if not _os.path.exists(path):
+    if not os.path.exists(path):
         raise ValueError('Nonexistent path')
-    return _os.path.abspath(path)
+    return os.path.abspath(path)
 
 
 def parse_dir_path(path: str) -> str:
-    if not _os.path.isdir(path):
+    if not os.path.isdir(path):
         raise ValueError(f'Nonexistent directory: {path}')
-    return _os.path.abspath(path)
+    return os.path.abspath(path)
 
 
 def parse_file_path(path: str) -> str:
-    if not _os.path.isfile(path):
+    if not os.path.isfile(path):
         raise ValueError(f'Nonexistent file: {path}')
-    return _os.path.abspath(path)
+    return os.path.abspath(path)
 
 
 def parse_writable_filepath(path: str) -> str:
-    if _os.path.isfile(path):
-        if not _os.access(path, _os.W_OK):
+    if os.path.isfile(path):
+        if not os.access(path, os.W_OK):
             raise ValueError(f"Don't have permission to rewrite file: {path}")
     else:
-        dir_path = parse_dir_path(_os.path.dirname(path))
-        if not _os.access(dir_path, _os.W_OK):
+        dir_path = parse_dir_path(os.path.dirname(path))
+        if not os.access(dir_path, os.W_OK):
             raise ValueError(f"Don't have permissions to write file in this directory: {dir_path}")
-    return _os.path.abspath(path)
+    return os.path.abspath(path)
 
 
 def parse_duration_delta(duration: str) -> int:
@@ -134,7 +148,7 @@ def parse_duration_delta(duration: str) -> int:
 
 
 def get_arch():
-    arch = _platform.machine()
+    arch = platform.machine()
     if '64' in arch:
         return 'x64'
     elif '86' in arch:
@@ -144,4 +158,4 @@ def get_arch():
 
 
 def get_system():
-    return _platform.system().lower()
+    return platform.system().lower()

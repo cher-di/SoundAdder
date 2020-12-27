@@ -1,78 +1,84 @@
-import os as _os
-import zipfile as _zipfile
-import tempfile as _tempfile
-import stat as _stat
-import platform as _platform
-import functools as _functools
-import logging as _logging
-import progressbar as _progressbar
+import os
+import zipfile
+import tempfile
+import stat
+import platform
+import functools
+import logging
+import progressbar
 import shutil
+import typing
 
-import src.ffbinaries.download as _download
-import src.utils as _utils
-
-from typing import Callable as _Callable
+import src.ffbinaries.download as download
+import src.utils as utils
 
 from src import FFMPEG, FFPROBE, APP_NAME
 
-_progressbar.streams.wrap_stderr()
+__all__ = [
+    'install_ffmpeg',
+    'install_ffprobe',
+]
 
-_logging.basicConfig(level=_logging.INFO,
-                     format='[%(asctime)s][%(levelname)s] %(message)s',
-                     datefmt='%d.%m.%Y %H:%M:%S')
-logger = _logging.getLogger(__name__)
+progressbar.streams.wrap_stderr()
+
+logging.basicConfig(level=logging.INFO,
+                    format='[%(asctime)s][%(levelname)s] %(message)s',
+                    datefmt='%d.%m.%Y %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 
 def install(binary_name: str, binary_path: str):
-    _os.makedirs(_os.path.dirname(binary_path), exist_ok=True)
-    with _tempfile.TemporaryDirectory(prefix=APP_NAME) as temp_dir:
-        filepath = _os.path.join(temp_dir, 'temp.zip')
+    os.makedirs(os.path.dirname(binary_path), exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=APP_NAME) as temp_dir:
+        filepath = os.path.join(temp_dir, 'temp.zip')
 
-        binary = _download.FFBinary(binary_name, _utils.get_system(), _utils.get_arch())
+        binary = download.FFBinary(binary_name, utils.get_system(), utils.get_arch())
         logger.info(f'Downloading {binary.file_name}')
         widgets = [
-            f'{binary.file_name}: ', _progressbar.Percentage(),
-            ' ', _progressbar.Bar(),
-            ' ', _progressbar.ETA(),
-            ' ', _progressbar.FileTransferSpeed(),
+            f'{binary.file_name}: ', progressbar.Percentage(),
+            ' ', progressbar.Bar(),
+            ' ', progressbar.ETA(),
+            ' ', progressbar.FileTransferSpeed(),
         ]
-        with _progressbar.ProgressBar(widgets=widgets, max_value=binary.size) as bar:
+        with progressbar.ProgressBar(widgets=widgets, max_value=binary.size) as bar:
             for downloaded_size in binary.download(filepath):
                 bar.update(downloaded_size)
 
-        archive_path = f'{binary_name}.exe' if _platform.system().lower() == 'windows' else binary_name
+        archive_path = f'{binary_name}.exe' if platform.system().lower() == 'windows' else binary_name
         logger.info(f'Extracting {archive_path} from {binary.file_name}')
-        with _zipfile.ZipFile(filepath) as zipfile:
-            zipfile.extract(archive_path, path=temp_dir)
-        shutil.move(_os.path.join(temp_dir, archive_path), binary_path)
+        with zipfile.ZipFile(filepath) as file:
+            file.extract(archive_path, path=temp_dir)
+        shutil.move(os.path.join(temp_dir, archive_path), binary_path)
 
-        if _platform.system().lower() == 'linux':
+        if platform.system().lower() == 'linux':
             logger.info(f'Make {binary_name} executable')
-            _os.chmod(binary_path, _stat.S_IRWXU)
+            os.chmod(binary_path, stat.S_IRWXU)
 
 
-def if_not_verified(binary_name: str, _verifier: _Callable):
-    def decorator(func: _Callable):
-        @_functools.wraps(func)
+def if_not_verified(binary_name: str, _verifier: typing.Callable):
+    def decorator(func: typing.Callable):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not _verifier():
                 logger.info(f'Installing {binary_name}')
                 return func(*args, **kwargs)
             else:
                 logger.info(f'{binary_name} already installed')
+
         return wrapper
+
     return decorator
 
 
-def rollback_if_error(binary_name: str, binary_path: str, _verifier: _Callable):
-    def decorator(func: _Callable):
-        @_functools.wraps(func)
+def rollback_if_error(binary_name: str, binary_path: str, _verifier: typing.Callable):
+    def decorator(func: typing.Callable):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             def rollback():
                 logger.error(f'An error occurred, while installing {binary_name}')
                 logger.error(f'Rollback all changes with {binary_name}')
-                if _os.path.exists(binary_path):
-                    _os.remove(binary_path)
+                if os.path.exists(binary_path):
+                    os.remove(binary_path)
 
             try:
                 result = func(*args, **kwargs)
@@ -87,26 +93,30 @@ def rollback_if_error(binary_name: str, binary_path: str, _verifier: _Callable):
                 else:
                     logger.info(f'{binary_name} installation OK')
                     return result
+
         return wrapper
+
     return decorator
 
 
-def install_wrapper(binary_name: str, binary_path: str, _verifier: _Callable):
-    def decorator(func: _Callable):
+def install_wrapper(binary_name: str, binary_path: str, _verifier: typing.Callable):
+    def decorator(func: typing.Callable):
         @if_not_verified(binary_name, _verifier)
         @rollback_if_error(binary_name, binary_path, _verifier)
-        @_functools.wraps(func)
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
-@install_wrapper('ffmpeg', FFMPEG, _utils.check_ffmpeg_installation)
+@install_wrapper('ffmpeg', FFMPEG, utils.check_ffmpeg_installation)
 def install_ffmpeg():
     install('ffmpeg', FFMPEG)
 
 
-@install_wrapper('ffprobe', FFPROBE, _utils.check_ffprobe_installation)
+@install_wrapper('ffprobe', FFPROBE, utils.check_ffprobe_installation)
 def install_ffprobe():
     install('ffprobe', FFPROBE)

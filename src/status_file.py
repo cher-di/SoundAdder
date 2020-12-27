@@ -1,4 +1,8 @@
-import json as _json
+import json
+
+__all__ = [
+    'StatusFile',
+]
 
 
 class StatusFile:
@@ -15,12 +19,12 @@ class StatusFile:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._file_path is not None:
             with open(self._file_path, 'w', encoding='utf-8') as file:
-                _json.dump(self._status_list, file, indent=4)
+                json.dump(self._status_list, file, indent=4)
 
     def add_status(self, video_path: str, audio_path: str, result_path: str, return_code: int):
         self._status_list.append({
-            "video_path": video_path,
-            "audio_path": audio_path,
-            "result_path": result_path,
-            "returncode": return_code,
+            "videoPath": video_path,
+            "audioPath": audio_path,
+            "resultPath": result_path,
+            "returnCode": return_code,
         })

@@ -5,7 +5,7 @@ import progressbar
 import os
 import datetime
 import sys
-from typing import Iterable
+import typing
 
 import src.audio_adder
 import src.utils
@@ -79,7 +79,7 @@ def run_verbose(runner: src.audio_adder.AudioAdderRunner, num: int) -> int:
     return runner.return_code
 
 
-def main(runners: Iterable[src.audio_adder.AudioAdderRunner], verbose=False, skip=False,
+def main(runners: typing.Iterable[src.audio_adder.AudioAdderRunner], verbose=False, skip=False,
          status_file_path: str = None) -> int:
     main_returncode = 0
     with src.status_file.StatusFile(status_file_path) as status_file:

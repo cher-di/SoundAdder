@@ -1,8 +1,14 @@
-import subprocess as _subprocess
+import subprocess
+import typing
 
-import src.utils as _utils
+import src.utils as utils
 
-from typing import Iterable as _Iterable, Generator as _Generator
+__all__ = [
+    'RunnerError',
+    'NeverRanError',
+
+    'Runner',
+]
 
 
 class RunnerError(Exception):
@@ -15,23 +21,23 @@ class NeverRanError(RunnerError):
 
 
 class Runner:
-    def __init__(self, args: _Iterable[str]):
+    def __init__(self, args: typing.Iterable[str]):
         self._args = tuple(args)
         self._return_code = None
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self._args!r})'
 
-    def run_verbose(self) -> _Generator[str, None, None]:
+    def run_verbose(self) -> typing.Generator[str, None, None]:
         self._return_code = 0
         try:
-            for output in _utils.execute_verbose(self._args):
+            for output in utils.execute_verbose(self._args):
                 yield output
-        except _subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError as e:
             self._return_code = e.returncode
 
     def run_silent(self) -> int:
-        self._return_code = _utils.execute(self._args)
+        self._return_code = utils.execute(self._args)
         return self._return_code
 
     @property
