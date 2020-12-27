@@ -6,13 +6,14 @@ import platform as _platform
 import functools as _functools
 import logging as _logging
 import progressbar as _progressbar
+import shutil
 
 import src.ffbinaries.download as _download
 import src.utils as _utils
 
 from typing import Callable as _Callable
 
-from src import tools_path, ffmpeg, ffprobe
+from src import FFMPEG, FFPROBE, APP_NAME
 
 _progressbar.streams.wrap_stderr()
 
@@ -24,7 +25,7 @@ logger = _logging.getLogger(__name__)
 
 def install(binary_name: str, binary_path: str):
     _os.makedirs(_os.path.dirname(binary_path), exist_ok=True)
-    with _tempfile.TemporaryDirectory(dir=tools_path) as temp_dir:
+    with _tempfile.TemporaryDirectory(prefix=APP_NAME) as temp_dir:
         filepath = _os.path.join(temp_dir, 'temp.zip')
 
         binary = _download.FFBinary(binary_name, _utils.get_system(), _utils.get_arch())
@@ -43,7 +44,7 @@ def install(binary_name: str, binary_path: str):
         logger.info(f'Extracting {archive_path} from {binary.file_name}')
         with _zipfile.ZipFile(filepath) as zipfile:
             zipfile.extract(archive_path, path=temp_dir)
-        _os.rename(_os.path.join(temp_dir, archive_path), binary_path)
+        shutil.move(_os.path.join(temp_dir, archive_path), binary_path)
 
         if _platform.system().lower() == 'linux':
             logger.info(f'Make {binary_name} executable')
@@ -101,20 +102,11 @@ def install_wrapper(binary_name: str, binary_path: str, _verifier: _Callable):
     return decorator
 
 
-@install_wrapper('ffmpeg', ffmpeg, _utils.check_ffmpeg_installation)
+@install_wrapper('ffmpeg', FFMPEG, _utils.check_ffmpeg_installation)
 def install_ffmpeg():
-    install('ffmpeg', ffmpeg)
+    install('ffmpeg', FFMPEG)
 
 
-@install_wrapper('ffprobe', ffprobe, _utils.check_ffprobe_installation)
+@install_wrapper('ffprobe', FFPROBE, _utils.check_ffprobe_installation)
 def install_ffprobe():
-    install('ffprobe', ffprobe)
-
-
-def main():
-    install_ffmpeg()
-    install_ffprobe()
-
-
-if __name__ == '__main__':
-    main()
+    install('ffprobe', FFPROBE)

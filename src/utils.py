@@ -8,7 +8,7 @@ import platform as _platform
 
 from typing import Generator as _Generator, Iterable as _Iterable
 
-from src import ffmpeg, ffprobe
+from src import FFMPEG, FFPROBE
 
 
 @_enum.unique
@@ -20,7 +20,7 @@ class FileType(_enum.Enum):
 
 def check_ffmpeg_installation() -> bool:
     try:
-        _subprocess.check_call((ffmpeg, "-version"),
+        _subprocess.check_call((FFMPEG, "-version"),
                                stdout=_subprocess.DEVNULL,
                                stderr=_subprocess.DEVNULL)
     except (_subprocess.CalledProcessError, FileNotFoundError):
@@ -31,7 +31,7 @@ def check_ffmpeg_installation() -> bool:
 
 def check_ffprobe_installation() -> bool:
     try:
-        _subprocess.check_call((ffprobe, "-version"),
+        _subprocess.check_call((FFPROBE, "-version"),
                                stdout=_subprocess.DEVNULL,
                                stderr=_subprocess.DEVNULL)
     except (_subprocess.CalledProcessError, FileNotFoundError):
@@ -41,7 +41,7 @@ def check_ffprobe_installation() -> bool:
 
 
 def get_media_duration(filename: str) -> _datetime.timedelta:
-    result = _subprocess.run((ffprobe, "-v", "error", "-show_entries", "format=duration", "-of",
+    result = _subprocess.run((FFPROBE, "-v", "error", "-show_entries", "format=duration", "-of",
                               "default=noprint_wrappers=1:nokey=1", filename),
                              stdout=_subprocess.PIPE,
                              stderr=_subprocess.STDOUT)
@@ -74,7 +74,7 @@ def get_file_type(file_name: str) -> FileType:
     pattern_video = _re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Video')
     pattern_audio = _re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Audio')
 
-    process = _subprocess.Popen((ffprobe, file_name),
+    process = _subprocess.Popen((FFPROBE, file_name),
                                 stdout=_subprocess.PIPE,
                                 stderr=_subprocess.STDOUT,
                                 universal_newlines=True)

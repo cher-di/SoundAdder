@@ -10,6 +10,7 @@ from typing import Iterable
 import src.audio_adder
 import src.utils
 import src.status_file
+import src.install
 
 
 progressbar.streams.wrap_stderr()
@@ -96,14 +97,10 @@ def main(runners: Iterable[src.audio_adder.AudioAdderRunner], verbose=False, ski
 
 
 def check_requirements():
-    not_installed = []
     if not src.utils.check_ffmpeg_installation():
-        not_installed.append("ffmpeg")
+        src.install.install_ffmpeg()
     if not src.utils.check_ffprobe_installation():
-        not_installed.append("ffprobe")
-
-    if not_installed:
-        raise Exception(f"Those packages are not installed: {', '.join(not_installed)}")
+        src.install.install_ffprobe()
 
 
 if __name__ == '__main__':
