@@ -149,9 +149,9 @@ def parse_duration_delta(duration: str) -> int:
 
 def get_arch():
     arch = platform.machine()
-    if '64' in arch:
+    if arch in ('x86_64', 'AMD64'):
         return 'x64'
-    elif '86' in arch:
+    elif arch in ('i386', 'i686'):
         return 'x86'
     else:
         return arch
