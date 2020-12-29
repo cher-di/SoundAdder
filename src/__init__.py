@@ -1,6 +1,15 @@
 import os
 import platform
+import logging
+import sys
 
+logger = logging.getLogger('SoundAdder')
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.INFO)
+stdout_handler.setFormatter(formatter)
+logger.addHandler(stdout_handler)
 
 __all__ = [
     'SCRIPT_ROOT',
@@ -16,7 +25,6 @@ __all__ = [
     'utils',
     'ffbinaries',
 ]
-
 
 SCRIPT_ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
 TOOLS_ROOT = os.path.join(SCRIPT_ROOT, 'tools')
