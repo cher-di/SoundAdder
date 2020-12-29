@@ -50,8 +50,8 @@ def parse_args() -> argparse.Namespace:
                         dest="skip",
                         action="store_true")
 
-    parser.add_argument("-j", "--json",
-                        help="Save adding status to specified file in json format",
+    parser.add_argument("-r", "--report",
+                        help="Save report to specified file in json format",
                         dest="status_file",
                         metavar="FILEPATH",
                         type=src.utils.parse_writable_filepath)
