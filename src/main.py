@@ -128,6 +128,6 @@ if __name__ == '__main__':
         if choice == "n":
             print("Cancellation of program")
         else:
-            exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
+            sys.exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
     else:
-        exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
+        sys.exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
