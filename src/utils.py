@@ -85,22 +85,23 @@ def execute_verbose(args: typing.Iterable[str]) -> typing.Generator[str, None, N
 
 
 def get_file_type(file_name: str) -> FileType:
-    pattern_video = re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Video')
-    pattern_audio = re.compile('Stream #0:0\\(?[a-z]{0,3}\\)?: Audio')
+    pattern_video = re.compile('Stream #\d+:\d+\\(?[a-z]{0,3}\\)?: Video')
+    pattern_audio = re.compile('Stream #\d+:\d+\\(?[a-z]{0,3}\\)?: Audio')
 
     process = subprocess.Popen((FFPROBE, file_name),
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True)
+    found_audio = False
     while True:
         try:
             string = next(process.stdout)
             if re.search(pattern_video, string) is not None:
                 return FileType.VIDEO
             if re.search(pattern_audio, string) is not None:
-                return FileType.AUDIO
+                found_audio = True
         except StopIteration:
-            return FileType.UNKNOWN
+            return FileType.AUDIO if found_audio else FileType.UNKNOWN
 
 
 def is_video(file_name: str) -> bool:
