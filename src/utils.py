@@ -4,7 +4,8 @@ import os
 import re
 import enum
 import platform
-import typing
+
+from typing import Generator, Iterable
 
 from src import FFMPEG, FFPROBE
 
@@ -55,21 +56,20 @@ def check_ffprobe_installation() -> bool:
 
 
 def get_media_duration(filename: str) -> datetime.timedelta:
-    result = subprocess.run((FFPROBE, "-v", "error", "-show_entries", "format=duration", "-of",
-                             "default=noprint_wrappers=1:nokey=1", filename),
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
+    cmd = (FFPROBE, "-v", "error", "-show_entries", "format=duration",
+           "-of", "default=noprint_wrappers=1:nokey=1", filename)
+    result = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     video_length = float(result.stdout)
     return datetime.timedelta(seconds=int(video_length))
 
 
-def execute(args: typing.Iterable[str]) -> int:
-    return subprocess.call(tuple(args),
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL)
+def execute(args: Iterable[str]) -> int:
+    return subprocess.call(
+        tuple(args), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def execute_verbose(args: typing.Iterable[str]) -> typing.Generator[str, None, None]:
+def execute_verbose(args: Iterable[str]) -> Generator[str, None, None]:
     process = subprocess.Popen(tuple(args),
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
@@ -79,14 +79,15 @@ def execute_verbose(args: typing.Iterable[str]) -> typing.Generator[str, None, N
             yield next(process.stdout)
         except StopIteration:
             if process.returncode:
-                raise subprocess.CalledProcessError(process.returncode, tuple(args))
+                raise subprocess.CalledProcessError(
+                    process.returncode, tuple(args))
             else:
                 break
 
 
 def get_file_type(file_name: str) -> FileType:
-    pattern_video = re.compile('Stream #\d+:\d+\\(?[a-z]{0,3}\\)?: Video')
-    pattern_audio = re.compile('Stream #\d+:\d+\\(?[a-z]{0,3}\\)?: Audio')
+    pattern_video = re.compile(r'Stream #\d+:\d+\(?[a-z]{0,3}\)?: Video')
+    pattern_audio = re.compile(r'Stream #\d+:\d+\(?[a-z]{0,3}\)?: Audio')
 
     process = subprocess.Popen((FFPROBE, file_name),
                                stdout=subprocess.PIPE,
@@ -137,14 +138,15 @@ def parse_writable_filepath(path: str) -> str:
     else:
         dir_path = parse_dir_path(os.path.dirname(path))
         if not os.access(dir_path, os.W_OK):
-            raise ValueError(f"Don't have permissions to write file in this directory: {dir_path}")
+            raise ValueError(f"Don't have permissions to write "
+                             f"file in this directory: {dir_path}")
     return os.path.abspath(path)
 
 
 def parse_duration_delta(duration: str) -> int:
     duration = int(duration)
     if duration < 0:
-        raise ValueError(f'Duration delta can not be negative')
+        raise ValueError('Duration delta can not be negative')
     return duration
 
 

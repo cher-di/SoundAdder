@@ -26,13 +26,17 @@ __all__ = [
     'ffbinaries',
 ]
 
+
+def add_extension_if_necessary(binary: str) -> str:
+    if platform.system() == 'Windows':
+        binary += '.exe'
+    return binary
+
+
 SCRIPT_ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
 TOOLS_ROOT = os.path.join(SCRIPT_ROOT, 'tools')
 
-ffmpeg_binary = 'ffmpeg.exe' if platform.system().lower() == 'windows' else 'ffmpeg'
-ffprobe_binary = 'ffprobe.exe' if platform.system().lower() == 'windows' else 'ffprobe'
-
-FFMPEG = os.path.join(TOOLS_ROOT, ffmpeg_binary)
-FFPROBE = os.path.join(TOOLS_ROOT, ffprobe_binary)
+FFMPEG = os.path.join(TOOLS_ROOT, add_extension_if_necessary('ffmpeg'))
+FFPROBE = os.path.join(TOOLS_ROOT, add_extension_if_necessary('ffprobe'))
 
 APP_NAME = 'SoundAdder'

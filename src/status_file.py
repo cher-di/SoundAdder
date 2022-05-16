@@ -21,7 +21,8 @@ class StatusFile:
             with open(self._file_path, 'w', encoding='utf-8') as file:
                 json.dump(self._status_list, file, indent=4)
 
-    def add_status(self, video_path: str, audio_path: str, result_path: str, return_code: int):
+    def add_status(self, video_path: str, audio_path: str,
+                   result_path: str, return_code: int):
         self._status_list.append({
             "videoPath": video_path,
             "audioPath": audio_path,

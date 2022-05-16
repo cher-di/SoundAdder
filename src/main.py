@@ -5,19 +5,21 @@ import progressbar
 import os
 import datetime
 import sys
-import typing
 
 import src.audio_adder
 import src.utils
 import src.status_file
 import src.install
 
+from typing import Iterable
+
 
 progressbar.streams.wrap_stderr()
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Program for adding audio to video")
+    parser = argparse.ArgumentParser(
+        description="Program for adding audio to video")
 
     parser.add_argument("dir_videos",
                         help="Path to directory with videos",
@@ -46,7 +48,8 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("-s", "--skip",
                         help="Skip failed videos and sounds adding. "
-                             "If not specified, exit with first failed adding with return code 1.",
+                             "If not specified, exit with first failed adding "
+                             "with return code 1.",
                         dest="skip",
                         action="store_true")
 
@@ -57,7 +60,8 @@ def parse_args() -> argparse.Namespace:
                         type=src.utils.parse_writable_filepath)
 
     parser.add_argument("-d", "--delta",
-                        help="Maximum delta, between durations of video and audio in seconds",
+                        help="Maximum delta, between durations "
+                             "of video and audio in seconds",
                         dest="delta",
                         type=src.utils.parse_duration_delta,
                         default=0)
@@ -66,29 +70,36 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_verbose(runner: src.audio_adder.AudioAdderRunner, num: int) -> int:
-    print(f"{num + 1}: {os.path.basename(runner.video_path)} + {os.path.basename(runner.audio_path)}")
+    print(f"{num + 1}: {os.path.basename(runner.video_path)} + "
+          f"{os.path.basename(runner.audio_path)}")
     video_length = src.utils.get_media_duration(runner.video_path)
     with progressbar.ProgressBar(max_value=100) as bar:
         for output in runner.run_verbose():
             match = re.search("time=[0-9]{2}:[0-9]{2}:[0-9]{2}", output)
             if match is not None:
                 match = match.group(0)
-                hours, minutes, seconds = (int(i) for i in match[5:].split(":"))
-                time = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                hours, minutes, seconds = (
+                    int(i) for i in match[5:].split(":"))
+                time = datetime.timedelta(
+                    hours=hours, minutes=minutes, seconds=seconds)
                 bar.update(int(time / video_length * 100))
     return runner.return_code
 
 
-def main(runners: typing.Iterable[src.audio_adder.AudioAdderRunner], verbose=False, skip=False,
-         status_file_path: str = None) -> int:
+def main(runners: Iterable[src.audio_adder.AudioAdderRunner],
+         verbose=False, skip=False, status_file_path: str = None) -> int:
     main_returncode = 0
     with src.status_file.StatusFile(status_file_path) as status_file:
         for num, runner in enumerate(runners):
-            returncode = run_verbose(runner, num) if verbose else runner.run_silent()
-            status_file.add_status(runner.video_path, runner.audio_path, runner.result_path, returncode)
+            returncode = (run_verbose(runner, num) if verbose
+                          else runner.run_silent())
+            status_file.add_status(runner.video_path, runner.audio_path,
+                                   runner.result_path, returncode)
             if returncode:
-                print(f'An error occurred when adding {runner.audio_path} to {runner.video_path} '
-                      f'and writing to {runner.result_path}, returncode: {returncode}', file=sys.stderr)
+                print(f'An error occurred when adding '
+                      f'{runner.audio_path} to {runner.video_path} '
+                      f'and writing to {runner.result_path}, '
+                      f'returncode: {returncode}', file=sys.stderr)
                 if not skip:
                     return 1
                 else:
@@ -109,7 +120,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     print("Scanning directories...")
-    audio_adder = src.audio_adder.AudioAdder(args.dir_videos, args.dir_audios, args.dir_results, args.delta)
+    audio_adder = src.audio_adder.AudioAdder(
+        args.dir_videos, args.dir_audios, args.dir_results, args.delta)
 
     correspondence_table = audio_adder.correspondence_table
 
@@ -128,6 +140,8 @@ if __name__ == '__main__':
         if choice == "n":
             print("Cancellation of program")
         else:
-            sys.exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
+            sys.exit(main(audio_adder.get_runners(), args.verbose,
+                          args.skip, args.status_file))
     else:
-        sys.exit(main(audio_adder.get_runners(), args.verbose, args.skip, args.status_file))
+        sys.exit(main(audio_adder.get_runners(), args.verbose,
+                      args.skip, args.status_file))

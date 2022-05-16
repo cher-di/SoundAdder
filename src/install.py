@@ -6,11 +6,12 @@ import platform
 import functools
 import progressbar
 import shutil
-import typing
 import logging
 
 import src.ffbinaries.download as download
 import src.utils as utils
+
+from typing import Callable
 
 from src import FFMPEG, FFPROBE, APP_NAME
 
@@ -29,7 +30,8 @@ def install(binary_name: str, binary_path: str):
     with tempfile.TemporaryDirectory(prefix=APP_NAME) as temp_dir:
         filepath = os.path.join(temp_dir, 'temp.zip')
 
-        binary = download.FFBinary(binary_name, utils.get_system(), utils.get_arch())
+        binary = download.FFBinary(
+            binary_name, utils.get_system(), utils.get_arch())
         logger.info(f'Downloading {binary.file_name}')
         widgets = [
             f'{binary.file_name}: ', progressbar.Percentage(),
@@ -37,11 +39,14 @@ def install(binary_name: str, binary_path: str):
             ' ', progressbar.ETA(),
             ' ', progressbar.FileTransferSpeed(),
         ]
-        with progressbar.ProgressBar(widgets=widgets, max_value=binary.size) as bar:
+        with progressbar.ProgressBar(widgets=widgets,
+                                     max_value=binary.size) as bar:
             for downloaded_size in binary.download(filepath):
                 bar.update(downloaded_size)
 
-        archive_path = f'{binary_name}.exe' if platform.system().lower() == 'windows' else binary_name
+        archive_path = binary_name
+        if platform.system() == 'Windows':
+            archive_path += '.exe'
         logger.info(f'Extracting {archive_path} from {binary.file_name}')
         with zipfile.ZipFile(filepath) as file:
             file.extract(archive_path, path=temp_dir)
@@ -52,8 +57,8 @@ def install(binary_name: str, binary_path: str):
             os.chmod(binary_path, stat.S_IRWXU)
 
 
-def if_not_verified(binary_name: str, _verifier: typing.Callable):
-    def decorator(func: typing.Callable):
+def if_not_verified(binary_name: str, _verifier: Callable):
+    def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not _verifier():
@@ -67,12 +72,14 @@ def if_not_verified(binary_name: str, _verifier: typing.Callable):
     return decorator
 
 
-def rollback_if_error(binary_name: str, binary_path: str, _verifier: typing.Callable):
-    def decorator(func: typing.Callable):
+def rollback_if_error(binary_name: str, binary_path: str,
+                      _verifier: Callable):
+    def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             def rollback():
-                logger.error(f'An error occurred, while installing {binary_name}')
+                logger.error(f'An error occurred, '
+                             f'while installing {binary_name}')
                 logger.error(f'Rollback all changes with {binary_name}')
                 if os.path.exists(binary_path):
                     os.remove(binary_path)
@@ -96,8 +103,8 @@ def rollback_if_error(binary_name: str, binary_path: str, _verifier: typing.Call
     return decorator
 
 
-def install_wrapper(binary_name: str, binary_path: str, _verifier: typing.Callable):
-    def decorator(func: typing.Callable):
+def install_wrapper(binary_name: str, binary_path: str, _verifier: Callable):
+    def decorator(func: Callable):
         @if_not_verified(binary_name, _verifier)
         @rollback_if_error(binary_name, binary_path, _verifier)
         @functools.wraps(func)
