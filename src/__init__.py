@@ -11,21 +11,6 @@ stdout_handler.setLevel(logging.INFO)
 stdout_handler.setFormatter(formatter)
 logger.addHandler(stdout_handler)
 
-__all__ = [
-    'SCRIPT_ROOT',
-    'TOOLS_ROOT',
-    'FFMPEG',
-    'FFPROBE',
-    'APP_NAME',
-
-    'audio_adder',
-    'install',
-    'runner',
-    'status_file',
-    'utils',
-    'ffbinaries',
-]
-
 
 def add_extension_if_necessary(binary: str) -> str:
     if platform.system() == 'Windows':

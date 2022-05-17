@@ -1,14 +1,8 @@
 import subprocess
-import typing
+
+from typing import Generator, Iterable
 
 import src.utils as utils
-
-__all__ = [
-    'RunnerError',
-    'NeverRanError',
-
-    'Runner',
-]
 
 
 class RunnerError(Exception):
@@ -21,14 +15,14 @@ class NeverRanError(RunnerError):
 
 
 class Runner:
-    def __init__(self, args: typing.Iterable[str]):
+    def __init__(self, args: Iterable[str]):
         self._args = tuple(args)
         self._return_code = None
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self._args!r})'
 
-    def run_verbose(self) -> typing.Generator[str, None, None]:
+    def run_verbose(self) -> Generator[str, None, None]:
         self._return_code = 0
         try:
             for output in utils.execute_verbose(self._args):

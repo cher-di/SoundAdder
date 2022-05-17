@@ -1,9 +1,5 @@
 import json
 
-__all__ = [
-    'StatusFile',
-]
-
 
 class StatusFile:
     def __init__(self, file_path: str):

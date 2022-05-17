@@ -9,11 +9,6 @@ from typing import Callable, Generator, Tuple
 
 from src import FFMPEG
 
-__all__ = [
-    'AudioAdderRunner',
-    'AudioAdder',
-]
-
 
 class AudioAdderRunner(runner.Runner):
     def __init__(self, video_path: str, audio_path: str, result_path: str):

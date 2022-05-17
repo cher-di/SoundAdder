@@ -15,11 +15,6 @@ from typing import Callable
 
 from src import FFMPEG, FFPROBE, APP_NAME
 
-__all__ = [
-    'install_ffmpeg',
-    'install_ffprobe',
-]
-
 logger = logging.getLogger('SoundAdder')
 
 progressbar.streams.wrap_stderr()

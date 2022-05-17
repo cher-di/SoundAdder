@@ -5,11 +5,6 @@ import src.ffbinaries.ffbinaries as ffbinaries
 
 from typing import Generator, Union
 
-__all__ = [
-    'Binary',
-    'FFBinary',
-]
-
 
 class Binary:
     def __init__(self, url: str):
