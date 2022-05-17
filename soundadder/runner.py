@@ -2,7 +2,7 @@ import subprocess
 
 from typing import Generator, Iterable
 
-import src.utils as utils
+import soundadder.utils as utils
 
 
 class RunnerError(Exception):

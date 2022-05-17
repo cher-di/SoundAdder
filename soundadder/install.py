@@ -8,12 +8,12 @@ import progressbar
 import shutil
 import logging
 
-import src.ffbinaries.download as download
-import src.utils as utils
+import soundadder.ffbinaries.download as download
+import soundadder.utils as utils
 
 from typing import Callable
 
-from src import FFMPEG, FFPROBE, APP_NAME
+from soundadder import FFMPEG, FFPROBE, APP_NAME
 
 logger = logging.getLogger('SoundAdder')
 

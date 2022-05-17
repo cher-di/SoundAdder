@@ -7,7 +7,7 @@ import platform
 
 from typing import Generator, Iterable
 
-from src import FFMPEG, FFPROBE
+from soundadder import FFMPEG, FFPROBE
 
 
 @enum.unique

@@ -1,7 +1,7 @@
 import requests
 import os
 
-import src.ffbinaries.ffbinaries as ffbinaries
+import soundadder.ffbinaries.ffbinaries as ffbinaries
 
 from typing import Generator, Union
 

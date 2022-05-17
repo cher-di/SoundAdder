@@ -2,12 +2,12 @@ import os
 import json
 import datetime
 
-import src.utils as utils
-import src.runner as runner
+import soundadder.utils as utils
+import soundadder.runner as runner
 
 from typing import Callable, Generator, Tuple
 
-from src import FFMPEG
+from soundadder import FFMPEG
 
 
 class AudioAdderRunner(runner.Runner):
