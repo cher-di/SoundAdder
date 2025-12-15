@@ -7,13 +7,11 @@ import soundadder.runner as runner
 
 from typing import Callable, Generator, Tuple
 
-from soundadder import FFMPEG
-
 
 class AudioAdderRunner(runner.Runner):
     def __init__(self, video_path: str, audio_path: str, result_path: str):
         super().__init__(
-            (FFMPEG, "-i", video_path, "-i", audio_path, "-c:v", "copy",
+            ('ffmpeg', "-i", video_path, "-i", audio_path, "-c:v", "copy",
              "-c:a", "copy", "-map", "0:0", "-map", "1:0", result_path)
         )
         self._video_path = video_path

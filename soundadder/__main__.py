@@ -9,7 +9,6 @@ import sys
 from soundadder import audio_adder
 from soundadder import utils
 from soundadder import status_file
-from soundadder import install
 
 from typing import Iterable
 
@@ -107,16 +106,7 @@ def main(runners: Iterable[audio_adder.AudioAdderRunner],
     return main_returncode
 
 
-def check_requirements():
-    if not utils.check_ffmpeg_installation():
-        install.install_ffmpeg()
-    if not utils.check_ffprobe_installation():
-        install.install_ffprobe()
-
-
 if __name__ == '__main__':
-    check_requirements()
-
     args = parse_args()
 
     print("Scanning directories...")

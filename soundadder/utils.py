@@ -7,8 +7,6 @@ import platform
 
 from typing import Generator, Iterable
 
-from soundadder import FFMPEG, FFPROBE
-
 
 @enum.unique
 class FileType(enum.Enum):
@@ -17,30 +15,8 @@ class FileType(enum.Enum):
     UNKNOWN = enum.auto()
 
 
-def check_ffmpeg_installation() -> bool:
-    try:
-        subprocess.check_call((FFMPEG, "-version"),
-                              stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
-    else:
-        return True
-
-
-def check_ffprobe_installation() -> bool:
-    try:
-        subprocess.check_call((FFPROBE, "-version"),
-                              stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL)
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
-    else:
-        return True
-
-
 def get_media_duration(filename: str) -> datetime.timedelta:
-    cmd = (FFPROBE, "-v", "error", "-show_entries", "format=duration",
+    cmd = ('ffprobe', "-v", "error", "-show_entries", "format=duration",
            "-of", "default=noprint_wrappers=1:nokey=1", filename)
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -73,7 +49,7 @@ def get_file_type(file_name: str) -> FileType:
     pattern_video = re.compile(r'Stream #\d+:\d+\(?[a-z]{0,3}\)?: Video')
     pattern_audio = re.compile(r'Stream #\d+:\d+\(?[a-z]{0,3}\)?: Audio')
 
-    process = subprocess.Popen((FFPROBE, file_name),
+    process = subprocess.Popen(('ffprobe', file_name),
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True)
