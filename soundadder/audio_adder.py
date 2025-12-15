@@ -97,7 +97,3 @@ class AudioAdder:
     @property
     def correspondence_table(self) -> Tuple[Tuple[str, str], ...]:
         return self._correspondence_table
-
-
-if __name__ == '__main__':
-    print("This is python script with AudioAdder class")

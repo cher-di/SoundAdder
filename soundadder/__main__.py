@@ -1,4 +1,5 @@
 import argparse
+import logging
 import prettytable
 import re
 import progressbar
@@ -11,6 +12,12 @@ from soundadder import utils
 from soundadder import status_file
 
 from typing import Iterable
+
+
+logging.basicConfig(
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    level=logging.INFO,
+)
 
 
 progressbar.streams.wrap_stderr()
@@ -69,8 +76,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_verbose(runner: audio_adder.AudioAdderRunner, num: int) -> int:
-    print(f"{num + 1}: {os.path.basename(runner.video_path)} + "
-          f"{os.path.basename(runner.audio_path)}")
+    logging.info(
+        "%d: %s + %s",
+        num + 1,
+        os.path.basename(runner.video_path),
+        os.path.basename(runner.audio_path),
+    )
     video_length = utils.get_media_duration(runner.video_path)
     with progressbar.ProgressBar(max_value=100) as bar:
         for output in runner.run_verbose():
@@ -95,10 +106,14 @@ def main(runners: Iterable[audio_adder.AudioAdderRunner],
             sf.add_status(runner.video_path, runner.audio_path,
                           runner.result_path, returncode)
             if returncode:
-                print(f'An error occurred when adding '
-                      f'{runner.audio_path} to {runner.video_path} '
-                      f'and writing to {runner.result_path}, '
-                      f'returncode: {returncode}', file=sys.stderr)
+                logging.error(
+                    'An error occurred when adding %s to %s and '
+                    'writing to %s, returncode: %d',
+                    runner.audio_path,
+                    runner.video_path,
+                    runner.result_path,
+                    returncode,
+                )
                 if not skip:
                     return 1
                 else:
@@ -109,7 +124,7 @@ def main(runners: Iterable[audio_adder.AudioAdderRunner],
 if __name__ == '__main__':
     args = parse_args()
 
-    print("Scanning directories...")
+    logging.info("Scanning directories...")
     audio_adder = audio_adder.AudioAdder(
         args.dir_videos, args.dir_audios, args.dir_results, args.delta)
 
@@ -120,15 +135,14 @@ if __name__ == '__main__':
         video_name = os.path.basename(video)
         audio_name = os.path.basename(audio)
         table.add_row((num + 1, video_name, audio_name))
-    print(table)
-    print(f"Result directory: {args.dir_results}")
+    logging.info("Result directory: %s\n%s", args.dir_results, table)
 
     if not args.confirm:
         choice = None
         while choice not in ("y", "n"):
             choice = input("Continue? (y)es/(n)o: ")
         if choice == "n":
-            print("Cancellation of program")
+            logging.info("Cancellation of program")
         else:
             sys.exit(main(audio_adder.get_runners(), args.verbose,
                           args.skip, args.status_file))
